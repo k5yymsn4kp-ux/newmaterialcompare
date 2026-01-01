@@ -1,0 +1,153 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Basket · Material Compare (Demo)</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">MC</div>
+      <div>
+        <div class="title">Basket</div>
+        <div class="subtitle">Smart insights · delivery-aware totals · buy local option</div>
+      </div>
+    </div>
+    <a class="basket" href="/">Back to search</a>
+  </header>
+
+  <main class="wrap">
+    <section class="card">
+      <h2>Your basket</h2>
+
+      {% if not basket_lines %}
+        <p class="muted">Basket is empty. Go back and add timber/sheets/screws.</p>
+      {% else %}
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th class="right">Qty</th>
+              <th class="right">Unit</th>
+              <th class="right">Remove</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for line in basket_lines %}
+              <tr>
+                <td>{{ line.label }}</td>
+                <td class="right">{{ line.qty }}</td>
+                <td class="right">{{ line.unit }}</td>
+                <td class="right">
+                  <form method="post" action="/remove">
+                    <input type="hidden" name="canonical" value="{{ line.canonical }}" />
+                    <button type="submit" class="btn-danger">Remove</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <form method="post" action="/clear" style="margin-top:12px;">
+          <button type="submit" class="btn-ghost">Clear basket</button>
+        </form>
+      {% endif %}
+    </section>
+
+    {% if insights and basket_lines %}
+      <section class="insight card">
+        <h2>{{ insights.headline }}</h2>
+        <ul class="insight-list">
+          {% for b in insights.bullets %}
+            <li>{{ b }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+
+      <section class="grid-2">
+        <div class="card">
+          <h3>Totals comparison</h3>
+
+          <div class="kpis">
+            <div class="kpi">
+              <div class="kpi-label">Best split basket</div>
+              <div class="kpi-value">{{ gbp(insights.split_best.total) }}</div>
+              <div class="muted small">Delivery {{ gbp(insights.split_best.delivery_total) }} · Lead {{ insights.split_best.lead_days }} day(s)</div>
+            </div>
+
+            {% if insights.single_best %}
+            <div class="kpi">
+              <div class="kpi-label">Best single supplier</div>
+              <div class="kpi-value">{{ gbp(insights.single_best.total) }}</div>
+              <div class="muted small">{{ insights.single_best.supplier }} · Delivery {{ gbp(insights.single_best.delivery_total) }} · Lead {{ insights.single_best.lead_days }} day(s)</div>
+            </div>
+            {% else %}
+            <div class="kpi">
+              <div class="kpi-label">Best single supplier</div>
+              <div class="kpi-value">N/A</div>
+              <div class="muted small">No single supplier covers all lines (demo)</div>
+            </div>
+            {% endif %}
+
+            {% if insights.local_best %}
+            <div class="kpi">
+              <div class="kpi-label">Buy local option</div>
+              <div class="kpi-value">{{ gbp(insights.local_best.total) }}</div>
+              <div class="muted small">Delivery {{ gbp(insights.local_best.delivery_total) }} · Lead {{ insights.local_best.lead_days }} day(s)</div>
+            </div>
+            {% endif %}
+          </div>
+
+          {% if insights.fastest %}
+            <div class="note">
+              <strong>Fastest option:</strong>
+              {% if insights.fastest.type == 'single' %}
+                Single supplier ({{ insights.fastest.supplier }})
+              {% elif insights.fastest.type == 'local' %}
+                Buy local option
+              {% else %}
+                Split basket
+              {% endif %}
+              · {{ insights.fastest.lead_days }} day(s) · Total {{ gbp(insights.fastest.total) }}
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="card">
+          <h3>Split basket breakdown</h3>
+
+          {% for supplier, block in insights.split_best.breakdown.items() %}
+            <div class="split-block">
+              <div class="split-head">
+                <div>
+                  <strong>{{ supplier }}</strong>
+                  <span class="muted">· Delivery {{ gbp(block.delivery) }} · Lead {{ block.lead_days }} day(s)</span>
+                </div>
+              </div>
+              <ul class="lines">
+                {% for l in block.lines %}
+                  <li>
+                    <span>{{ l.label }} × {{ l.qty }}</span>
+                    <span class="muted">{{ gbp(l.line_total) }}</span>
+                  </li>
+                {% endfor %}
+              </ul>
+              <div class="split-foot">
+                <span>Items total</span><span>{{ gbp(block.items_total) }}</span>
+              </div>
+            </div>
+          {% endfor %}
+
+          <div class="split-total">
+            <div><strong>Split total</strong></div>
+            <div><strong>{{ gbp(insights.split_best.total) }}</strong></div>
+          </div>
+        </div>
+      </section>
+    {% endif %}
+  </main>
+</body>
+</html>
