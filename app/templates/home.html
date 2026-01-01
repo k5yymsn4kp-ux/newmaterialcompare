@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Material Compare</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div style="display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <h1 style="margin:0;">Search materials</h1>
+    <p style="margin:6px 0 0; color:#666;">Find what you need, add to basket, then compare totals.</p>
+  </div>
+  <div>
+    <a href="/basket">Basket ({{ basket_count }}) →</a>
+  </div>
+</div>
+
+<form method="get" action="/" style="margin:16px 0;">
+  <input type="text" name="q" value="{{ q }}" placeholder="Search e.g. 4x2, OSB, MDF, ply..." style="width:420px; padding:8px;">
+  <button type="submit">Search</button>
+</form>
+
+<table>
+  <tr>
+    <th>Product</th>
+    <th>Action</th>
+  </tr>
+
+  {% for p in results %}
+  <tr>
+    <td>{{ p.name }}</td>
+    <td>
+      <form method="post" action="/basket/add" style="margin:0; display:flex; gap:8px; align-items:center;">
+        <input type="hidden" name="product_id" value="{{ p.id }}">
+        <input type="number" name="qty" value="1" min="1" style="width:70px;">
+        <button type="submit">Add</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+
+</body>
+</html>

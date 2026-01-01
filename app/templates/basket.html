@@ -1,162 +1,185 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Basket · Material Compare (Demo)</title>
-  <link rel="stylesheet" href="/static/style.css" />
+  <title>Basket</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <div class="logo">MC</div>
-      <div>
-        <div class="title">Basket</div>
-        <div class="subtitle">Smart insights · delivery-aware totals · buy local option</div>
-      </div>
+
+<div style="display:flex; justify-content:space-between; align-items:center;">
+  <div>
+    <h1 style="margin:0;">Basket</h1>
+    <p style="margin:6px 0 0; color:#666;">Compare totals by supplier. Price-first.</p>
+  </div>
+  <div style="display:flex; gap:10px;">
+    <a href="/">← Back to search</a>
+    <form method="post" action="/basket/clear" style="margin:0;">
+      <button type="submit">Clear basket</button>
+    </form>
+  </div>
+</div>
+
+<div style="padding:10px; border:1px solid #ddd; margin: 12px 0; color:#555;">
+  <strong>Price basis:</strong>
+  <span style="margin-left:8px;"><strong>Online price</strong> = public website price.</span>
+  <span style="margin-left:8px;"><strong>My account</strong> = your trade account pricing (can vary by branch & terms).</span>
+</div>
+
+{% if not any_qty %}
+  <div style="padding:12px; border:1px solid #ddd; margin-top:12px;">
+    Basket is empty. Go back to search and add materials.
+  </div>
+{% else %}
+
+<form method="post" action="/basket/update">
+
+  <div style="display:flex; gap:16px; flex-wrap:wrap; margin: 10px 0 18px 0; padding: 10px; border: 1px solid #ddd;">
+    <div>
+      <strong>VAT:</strong>
+      <label style="margin-left:10px;">
+        <input type="radio" name="vat_mode" value="ex" {% if vat_mode=="ex" %}checked{% endif %}> Ex VAT
+      </label>
+      <label style="margin-left:10px;">
+        <input type="radio" name="vat_mode" value="inc" {% if vat_mode=="inc" %}checked{% endif %}> Inc VAT
+      </label>
     </div>
-    <a class="basket" href="/">Back to search</a>
-  </header>
 
-  <main class="wrap">
-    <section class="card">
-      <h2>Your basket</h2>
+    <div>
+      <strong>Mode:</strong>
+      <label style="margin-left:10px;">
+        <input type="radio" name="purchase_mode" value="single" {% if purchase_mode=="single" %}checked{% endif %}> Single supplier
+      </label>
+      <label style="margin-left:10px;">
+        <input type="radio" name="purchase_mode" value="split" {% if purchase_mode=="split" %}checked{% endif %}> Split basket
+      </label>
+    </div>
 
-      {% if not basket_lines %}
-        <p class="muted">Basket is empty. Go back and add timber/sheets/screws.</p>
-      {% else %}
-        <table class="table">
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th class="right">Qty</th>
-              <th class="right">Unit</th>
-              <th class="right">Remove</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for line in basket_lines %}
-              <tr>
-                <td>{{ line.label }}</td>
-                <td class="right">{{ line.qty }}</td>
-                <td class="right">{{ line.unit }}</td>
-                <td class="right">
-                  <form method="post" action="/remove">
-                    <input type="hidden" name="canonical" value="{{ line.canonical }}" />
-                    <button type="submit" class="btn-danger">Remove</button>
-                  </form>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    <div style="margin-left:auto;">
+      <button type="submit">Update basket</button>
+    </div>
+  </div>
 
-        <form method="post" action="/clear" style="margin-top:12px;">
-          <button type="submit" class="btn-ghost">Clear basket</button>
-        </form>
+  <h2>Basket items</h2>
+  <table>
+    <tr>
+      <th>Product</th>
+      <th>Qty</th>
+    </tr>
+    {% for row in items %}
+    <tr>
+      <td>{{ row.product.name }}</td>
+      <td>
+        <input type="number" name="qty_{{ row.product.id }}" value="{{ row.qty }}" min="0" style="width:90px;">
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+
+</form>
+
+<hr style="margin: 25px 0;">
+
+<h2>Totals</h2>
+
+{% if purchase_mode == "split" %}
+  <div style="padding:12px; border:1px solid #ddd; margin: 15px 0; background:#f7fbff;">
+    <strong>Selected mode:</strong> Split basket (cheapest per item)<br>
+    <strong>Split total ({{ "Inc VAT" if vat_mode=="inc" else "Ex VAT" }}):</strong>
+    £{{ "%.2f"|format(split_total_mode) }}
+    {% if saving_split_vs_best_single is not none %}
+      {% if saving_split_vs_best_single > 0 %}
+        <span style="margin-left:10px;">(saves £{{ "%.2f"|format(saving_split_vs_best_single) }} vs best single supplier)</span>
+      {% elif saving_split_vs_best_single < 0 %}
+        <span style="margin-left:10px;">(costs £{{ "%.2f"|format(-saving_split_vs_best_single) }} more than best single supplier)</span>
       {% endif %}
-    </section>
-
-    {% if insights and basket_lines %}
-      <section class="insight card">
-        <h2>{{ insights.headline }}</h2>
-        <ul class="insight-list">
-          {% for b in insights.bullets %}
-            <li>{{ b }}</li>
-          {% endfor %}
-        </ul>
-      </section>
-
-      <section class="cta-band" style="margin-top:16px;">
-        <div>
-          <h2 style="margin:0;">Ready to order?</h2>
-          <p class="muted" style="margin:6px 0 0;">Checkout will route your basket into supplier orders (demo).</p>
-        </div>
-        <a class="cta2" href="/checkout">Proceed to checkout</a>
-      </section>
-</section>
-
-      <section class="grid-2">
-        <div class="card">
-          <h3>Totals comparison</h3>
-
-          <div class="kpis">
-            <div class="kpi">
-              <div class="kpi-label">Best split basket</div>
-              <div class="kpi-value">{{ gbp(insights.split_best.total) }}</div>
-              <div class="muted small">Delivery {{ gbp(insights.split_best.delivery_total) }} · Lead {{ insights.split_best.lead_days }} day(s)</div>
-            </div>
-
-            {% if insights.single_best %}
-            <div class="kpi">
-              <div class="kpi-label">Best single supplier</div>
-              <div class="kpi-value">{{ gbp(insights.single_best.total) }}</div>
-              <div class="muted small">{{ insights.single_best.supplier }} · Delivery {{ gbp(insights.single_best.delivery_total) }} · Lead {{ insights.single_best.lead_days }} day(s)</div>
-            </div>
-            {% else %}
-            <div class="kpi">
-              <div class="kpi-label">Best single supplier</div>
-              <div class="kpi-value">N/A</div>
-              <div class="muted small">No single supplier covers all lines (demo)</div>
-            </div>
-            {% endif %}
-
-            {% if insights.local_best %}
-            <div class="kpi">
-              <div class="kpi-label">Buy local option</div>
-              <div class="kpi-value">{{ gbp(insights.local_best.total) }}</div>
-              <div class="muted small">Delivery {{ gbp(insights.local_best.delivery_total) }} · Lead {{ insights.local_best.lead_days }} day(s)</div>
-            </div>
-            {% endif %}
-          </div>
-
-          {% if insights.fastest %}
-            <div class="note">
-              <strong>Fastest option:</strong>
-              {% if insights.fastest.type == 'single' %}
-                Single supplier ({{ insights.fastest.supplier }})
-              {% elif insights.fastest.type == 'local' %}
-                Buy local option
-              {% else %}
-                Split basket
-              {% endif %}
-              · {{ insights.fastest.lead_days }} day(s) · Total {{ gbp(insights.fastest.total) }}
-            </div>
-          {% endif %}
-        </div>
-
-        <div class="card">
-          <h3>Split basket breakdown</h3>
-
-          {% for supplier, block in insights.split_best.breakdown.items() %}
-            <div class="split-block">
-              <div class="split-head">
-                <div>
-                  <strong>{{ supplier }}</strong>
-                  <span class="muted">· Delivery {{ gbp(block.delivery) }} · Lead {{ block.lead_days }} day(s)</span>
-                </div>
-              </div>
-              <ul class="lines">
-                {% for l in block.lines %}
-                  <li>
-                    <span>{{ l.label }} × {{ l.qty }}</span>
-                    <span class="muted">{{ gbp(l.line_total) }}</span>
-                  </li>
-                {% endfor %}
-              </ul>
-              <div class="split-foot">
-                <span>Items total</span><span>{{ gbp(block.items_total) }}</span>
-              </div>
-            </div>
-          {% endfor %}
-
-          <div class="split-total">
-            <div><strong>Split total</strong></div>
-            <div><strong>{{ gbp(insights.split_best.total) }}</strong></div>
-          </div>
-        </div>
-      </section>
     {% endif %}
-  </main>
+  </div>
+{% else %}
+  <div style="padding:12px; border:1px solid #ddd; margin: 15px 0; background:#f7fbff;">
+    <strong>Selected mode:</strong> Single supplier<br>
+    <strong>Best single supplier ({{ "Inc VAT" if vat_mode=="inc" else "Ex VAT" }}):</strong>
+    {{ best_single_supplier }} — £{{ "%.2f"|format(best_single_total_mode) }}
+    <span style="margin-left:10px; color:#666;">({{ supplier_price_type.get(best_single_supplier, "Online") }})</span>
+    {% if saving_split_vs_best_single is not none and saving_split_vs_best_single > 0 %}
+      <span style="margin-left:10px;">(you could save £{{ "%.2f"|format(saving_split_vs_best_single) }} by splitting)</span>
+    {% endif %}
+  </div>
+{% endif %}
+
+<h3>Single supplier totals</h3>
+<table>
+  <tr>
+    <th>Supplier</th>
+    <th>Price basis</th>
+    <th>Total Ex VAT</th>
+    <th>Total Inc VAT</th>
+  </tr>
+  {% set sorted_single = totals_mode_single|dictsort(by='value') %}
+  {% for supplier, _ in sorted_single %}
+  <tr {% if supplier == best_single_supplier %}style="background:#eaffea;font-weight:bold;"{% endif %}>
+    <td>{{ supplier }}</td>
+    <td style="color:#666;">{{ supplier_price_type.get(supplier, "Online") }}</td>
+    <td>£{{ "%.2f"|format(totals_ex_single[supplier]) }}</td>
+    <td>£{{ "%.2f"|format(totals_inc_single[supplier]) }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h3 style="margin-top:22px;">Split basket total</h3>
+<table>
+  <tr><th>Split total Ex VAT</th><th>Split total Inc VAT</th></tr>
+  <tr>
+    <td>£{{ "%.2f"|format(split_total_ex) }}</td>
+    <td>£{{ "%.2f"|format(split_total_inc) }}</td>
+  </tr>
+</table>
+
+<div style="margin-top:14px; padding:12px; border:1px solid #ddd;">
+  <strong>Split basket picks:</strong>
+  <ul style="margin:10px 0 0 18px;">
+    {% for line in split_picks %}
+      <li>{{ line.qty }} × {{ line.name }} → <strong>{{ line.supplier }}</strong> ({{ line.label }}) — £{{ "%.2f"|format(line.unit_ex) }} ex VAT/unit</li>
+    {% endfor %}
+  </ul>
+</div>
+
+<hr style="margin: 25px 0;">
+
+<h2>Project folders</h2>
+
+<form method="post" action="/jobs/save" style="border:1px solid #ddd; padding:12px;">
+  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+    <label><strong>Job name:</strong></label>
+    <input type="text" name="job_name" placeholder="e.g., Smith extension" style="width:320px; padding:6px;">
+    <button type="submit">Save job</button>
+  </div>
+</form>
+
+{% if jobs and jobs|length > 0 %}
+  <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
+    {% for jid, job in jobs %}
+      <div style="border:1px solid #eee; padding:10px;">
+        <div style="font-weight:bold;">{{ job.name }}</div>
+        <div style="font-size:12px; color:#666; margin-top:2px;">
+          Mode: {{ "Single" if job.purchase_mode=="single" else "Split" }} · VAT: {{ "Ex" if job.vat_mode=="ex" else "Inc" }}
+        </div>
+        <div style="margin-top:8px; display:flex; gap:12px; align-items:center;">
+          <a href="/jobs/load?job_id={{ jid }}">Load</a>
+          <form method="post" action="/jobs/delete" style="margin:0;">
+            <input type="hidden" name="job_id" value="{{ jid }}">
+            <button type="submit" style="padding:4px 8px;">Delete</button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div style="padding:10px; border:1px dashed #ddd; color:#666; margin-top:12px;">
+    No saved jobs yet.
+  </div>
+{% endif %}
+
+{% endif %}
+
 </body>
 </html>

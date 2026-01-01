@@ -1,272 +1,229 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Material Compare (Demo)</title>
-  <link rel="stylesheet" href="/static/style.css" />
+  <title>Material Compare</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <div class="logo">MC</div>
-      <div>
-        <div class="title">Material Compare</div>
-        <div class="subtitle">Compare delivered basket totals across UK suppliers — and buy local when it makes sense</div>
-      </div>
-    </div>
 
-    <nav class="nav">
-      <a href="#how">How it works</a>
-      <a href="#local">Shop local</a>
-      <a href="#about">About</a>
-      <a class="basket" href="/basket">Basket <span class="pill">{{ basket_count }}</span></a>
-    </nav>
-  </header>
-
-  <main class="wrap">
-    <!-- HERO -->
-    <section class="hero2">
-      <div class="hero2-left">
-        <div class="tag">Investor demo · mocked pricing</div>
-        <h1>Stop guessing who’s cheapest — compare the delivered basket.</h1>
-        <p class="lead">
-          Builders don’t buy “one item”. They buy a basket. We compare price + delivery + lead time,
-          and show whether splitting the basket saves money — with a buy-local option for trade counters.
-        </p>
-
-        <form method="get" action="/search" class="search hero-search">
-          <input name="q" value="{{ q }}" placeholder="Try: 3x2, 4x2, OSB 18, MDF, pdf, screws..." />
-          <button type="submit">Compare now</button>
-        </form>
-
-        <div class="hero-metrics">
-          <div class="metric"><div class="metric-k">Basket insight</div><div class="metric-v">Split vs single supplier</div></div>
-          <div class="metric"><div class="metric-k">Delivery aware</div><div class="metric-v">Totals include delivery</div></div>
-          <div class="metric"><div class="metric-k">Local options</div><div class="metric-v">Support nearby trade</div></div>
-        </div>
-
-        <div class="hint muted">
-          Quick searches:
-          <span class="chip">3x2</span>
-          <span class="chip">osb</span>
-          <span class="chip">mdf</span>
-          <span class="chip">pdf</span>
-          <span class="chip">screws</span>
-        </div>
-      </div>
-
-      <div class="hero2-right">
-        <div class="card">
-          <h2>Featured offers (demo)</h2>
-          <p class="muted small">These are “headline deals” to show how the platform can surface value instantly.</p>
-
-          <div class="featured">
-            <div class="featured-item">
-              <div class="featured-top">
-                <div class="featured-name">Plywood 18mm 8x4</div>
-                <div class="featured-price">£36.90</div>
-              </div>
-              <div class="muted small">Best today: Cheshire Timber (Local) · Delivery included at basket stage</div>
-            </div>
-
-            <div class="featured-item">
-              <div class="featured-top">
-                <div class="featured-name">Wood Screws 5x80 (200)</div>
-                <div class="featured-price">£9.75</div>
-              </div>
-              <div class="muted small">Best today: Manchester Fixings Depot (Local)</div>
-            </div>
-
-            <div class="featured-item">
-              <div class="featured-top">
-                <div class="featured-name">CLS 4x2 (2.4m)</div>
-                <div class="featured-price">£4.70</div>
-              </div>
-              <div class="muted small">Best today: Toolstation</div>
-            </div>
-          </div>
-
-          <a class="cta" href="/basket">Open basket insights →</a>
-        </div>
-      </div>
-    </section>
-
-    <!-- SUPPLIER STRIP -->
-    <section class="supplier-strip">
-      <div class="strip-title">Comparing suppliers like</div>
-      <div class="logos">
-        <img src="/static/logos/screwfix.svg" alt="Screwfix" />
-        <img src="/static/logos/toolstation.svg" alt="Toolstation" />
-        <img src="/static/logos/jewson.svg" alt="Jewson" />
-        <img src="/static/logos/mkm.svg" alt="MKM" />
-        <img src="/static/logos/local.svg" alt="Local Trade" />
-      </div>
-    </section>
-
-    <!-- RESULTS -->
-    {% if q and not grouped %}
-      <section class="card">
-        <h2>No results</h2>
-        <p class="muted">Try “screws”, “3x2”, “4x2”, “osb 18”, “mdf”, “pdf”, or add sizes.</p>
-      </section>
-    {% endif %}
-
-    {% if grouped %}
-      <section class="results-head">
-        <h2>Results for “{{ q }}”</h2>
-        <p class="muted">Add items across suppliers then open Basket to see split vs single totals and savings.</p>
-      </section>
-
-      <section class="grid">
-        {% for supplier, offers in grouped.items() %}
-          <div class="card">
-            <div class="supplier-head">
-              <div>
-                <h3>{{ supplier }}</h3>
-                <div class="muted small">
-                  {{ suppliers_meta[supplier].type }}{% if suppliers_meta[supplier].local %} · Local{% endif %}
-                  · Delivery £{{ '%.2f'|format(suppliers_meta[supplier].delivery_gbp) }}
-                  · Lead {{ suppliers_meta[supplier].lead_days }} day(s)
-                </div>
-              </div>
-              <div class="badge">Demo</div>
-            </div>
-
-            <div class="muted small" style="margin-top:6px;">{{ suppliers_meta[supplier].copy }}</div>
-
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th class="right">Unit</th>
-                  <th class="right">Price</th>
-                  <th class="right">Add</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for o in offers %}
-                  <tr>
-                    <td>
-  <div class="item-row">
-    <img class="thumb" src="/img/{{ o.canonical }}" alt="" onerror="this.style.display='none'">
-    <div>
-      <div class="item-title">{{ label_for(o.canonical) }}</div>
-      <div class="muted small">{{ o.title }}</div>
-    </div>
+{% if toast %}
+  <div style="padding:10px;border:1px solid #cfe3cf;background:#eaffea;margin-bottom:12px;">
+    {{ toast }}
   </div>
-</td>
-                    <td class="right">{{ o.unit }}</td>
-                    <td class="right">£{{ '%.2f'|format(o.price_gbp) }}</td>
-                    <td class="right">
-                      <form method="post" action="/add" class="addform">
-                        <input type="hidden" name="canonical" value="{{ o.canonical }}" />
-                        <input type="hidden" name="return_to" value="/?q={{ q | urlencode }}" />
-                        <input class="qty" type="number" name="qty" value="1" min="1" />
-                        <button type="submit">Add</button>
-                      </form>
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+{% endif %}
 
-            <div class="note">
-              <strong>Try this basket:</strong> add timber + plywood + screws → then Basket shows split savings + local option.
+<div style="display:flex; gap:18px; align-items:flex-start;">
+
+  <!-- LEFT: Saved Jobs (Project folders) -->
+  <div style="width:280px; border:1px solid #ddd; padding:12px; position:sticky; top:12px;">
+    <h3 style="margin-top:0;">Saved Jobs</h3>
+    <p style="margin-top:-6px; color:#666; font-size:13px;">
+      Save a basket as a job, then reload it later.
+    </p>
+
+    {% if jobs and jobs|length > 0 %}
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        {% for jid, job in jobs %}
+          <div style="border:1px solid #eee; padding:10px;">
+            <div style="font-weight:bold;">{{ job.name }}</div>
+            <div style="font-size:12px; color:#666; margin-top:2px;">
+              Mode: {{ "Single" if job.purchase_mode=="single" else "Split" }} · VAT: {{ "Ex" if job.vat_mode=="ex" else "Inc" }}
+            </div>
+
+            <div style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+              <a href="/?job_id={{ jid }}">Load</a>
+
+              <form method="post" action="/delete" style="margin:0;">
+                <input type="hidden" name="job_id" value="{{ jid }}">
+                <button type="submit" style="padding:4px 8px;">Delete</button>
+              </form>
             </div>
           </div>
         {% endfor %}
-      </section>
+      </div>
+    {% else %}
+      <div style="padding:10px; border:1px dashed #ddd; color:#666;">
+        No saved jobs yet.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- RIGHT: Main Pricing Tool -->
+  <div style="flex:1;">
+
+    <h1 style="margin-top:0;">Material Price Comparison</h1>
+    <p style="color:#555; margin-top:-8px;">
+      Builder-first pricing. Prices shown as if you are logged into your trade accounts.
+    </p>
+
+    <div style="padding:10px; border:1px solid #ddd; margin: 12px 0; color:#555;">
+      <strong>Price labels:</strong>
+      <span style="margin-left:8px;"><strong>Online price</strong> = public website price.</span>
+      <span style="margin-left:8px;"><strong>My account</strong> = your trade account pricing (can vary by branch & terms).</span>
+    </div>
+
+    <!-- CALCULATE FORM -->
+    <form method="post" action="/">
+
+      <div style="display:flex; gap:16px; flex-wrap:wrap; margin: 10px 0 18px 0; padding: 10px; border: 1px solid #ddd;">
+        <div>
+          <strong>VAT:</strong>
+          <label style="margin-left:10px;">
+            <input type="radio" name="vat_mode" value="ex" {% if vat_mode=="ex" %}checked{% endif %}>
+            Ex VAT
+          </label>
+          <label style="margin-left:10px;">
+            <input type="radio" name="vat_mode" value="inc" {% if vat_mode=="inc" %}checked{% endif %}>
+            Inc VAT
+          </label>
+        </div>
+
+        <div>
+          <strong>Mode:</strong>
+          <label style="margin-left:10px;">
+            <input type="radio" name="purchase_mode" value="single" {% if purchase_mode=="single" %}checked{% endif %}>
+            Single supplier
+          </label>
+          <label style="margin-left:10px;">
+            <input type="radio" name="purchase_mode" value="split" {% if purchase_mode=="split" %}checked{% endif %}>
+            Split basket (cheapest per item)
+          </label>
+        </div>
+      </div>
+
+      <table>
+        <tr>
+          <th>Product</th>
+          <th>Qty</th>
+          {% for s in suppliers %}
+            <th>
+              {{ s }}<br>
+              <span style="font-size:12px; color:#666;">
+                {% if supplier_price_type.get(s) == "Account" %}My account{% else %}Online price{% endif %}
+              </span>
+            </th>
+          {% endfor %}
+        </tr>
+
+        {% for p in products %}
+          <tr>
+            <td>{{ p.name }}</td>
+            <td><input type="number" name="qty_{{ p.id }}" min="0" value="{{ qty_map.get(p.id,0) }}" style="width:70px;"></td>
+            {% for s in suppliers %}
+              <td>£{{ "%.2f"|format(p.prices[s]) }}</td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </table>
+
+      <br>
+      <button type="submit">Calculate</button>
+
+    </form>
+
+    {% if any_qty %}
+
+      <hr style="margin: 25px 0;">
+
+      <h2>Results</h2>
+
+      {% if purchase_mode == "split" %}
+        <div style="padding:12px; border:1px solid #ddd; margin: 15px 0; background:#f7fbff;">
+          <strong>Selected mode:</strong> Split basket (cheapest per item)<br>
+          <strong>Split total ({{ "Inc VAT" if vat_mode=="inc" else "Ex VAT" }}):</strong>
+          £{{ "%.2f"|format(split_total_mode) }}
+          {% if saving_split_vs_best_single is not none %}
+            {% if saving_split_vs_best_single > 0 %}
+              <span style="margin-left:10px;">(saves £{{ "%.2f"|format(saving_split_vs_best_single) }} vs best single supplier)</span>
+            {% elif saving_split_vs_best_single < 0 %}
+              <span style="margin-left:10px;">(costs £{{ "%.2f"|format(-saving_split_vs_best_single) }} more than best single supplier)</span>
+            {% endif %}
+          {% endif %}
+        </div>
+      {% else %}
+        <div style="padding:12px; border:1px solid #ddd; margin: 15px 0; background:#f7fbff;">
+          <strong>Selected mode:</strong> Single supplier<br>
+          <strong>Best single supplier ({{ "Inc VAT" if vat_mode=="inc" else "Ex VAT" }}):</strong>
+          {{ best_single_supplier }} — £{{ "%.2f"|format(best_single_total_mode) }}
+          <span style="margin-left:10px; color:#666;">
+            ({% if supplier_price_type.get(best_single_supplier) == "Account" %}My account{% else %}Online price{% endif %})
+          </span>
+          {% if saving_split_vs_best_single is not none and saving_split_vs_best_single > 0 %}
+            <span style="margin-left:10px;">(you could save £{{ "%.2f"|format(saving_split_vs_best_single) }} by splitting)</span>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      <h3>Single supplier totals</h3>
+      <table>
+        <tr>
+          <th>Supplier</th>
+          <th>Price basis</th>
+          <th>Total Ex VAT</th>
+          <th>Total Inc VAT</th>
+        </tr>
+
+        {% set sorted_single = totals_mode_single|dictsort(by='value') %}
+        {% for supplier, _ in sorted_single %}
+          <tr {% if supplier == best_single_supplier %}style="background:#eaffea; font-weight:bold;"{% endif %}>
+            <td>{{ supplier }}</td>
+            <td style="color:#666;">
+              {% if supplier_price_type.get(supplier) == "Account" %}My account{% else %}Online price{% endif %}
+            </td>
+            <td>£{{ "%.2f"|format(totals_ex_single[supplier]) }}</td>
+            <td>£{{ "%.2f"|format(totals_inc_single[supplier]) }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+
+      <h3 style="margin-top:22px;">Split basket total</h3>
+      <table>
+        <tr><th>Split total Ex VAT</th><th>Split total Inc VAT</th></tr>
+        <tr>
+          <td>£{{ "%.2f"|format(split_total_ex) }}</td>
+          <td>£{{ "%.2f"|format(split_total_inc) }}</td>
+        </tr>
+      </table>
+
+      <div style="margin-top:14px; padding:12px; border:1px solid #ddd;">
+        <strong>Split basket picks:</strong> (winner per line by unit price)
+        <ul style="margin:10px 0 0 18px;">
+          {% for line in split_lines %}
+            <li>
+              {{ line.qty }} × {{ line.name }} →
+              <strong>{{ line.chosen_supplier }}</strong>
+              <span style="color:#666;">({% if line.price_type=="Account" %}My account{% else %}Online price{% endif %})</span>
+              — £{{ "%.2f"|format(line.chosen_unit_ex) }} ex VAT/unit
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <!-- SAVE JOB (Project folder) -->
+      <hr style="margin: 25px 0;">
+
+      <h2>Save as a Job</h2>
+      <p style="color:#555; margin-top:-8px;">Save these quantities + settings as a project folder.</p>
+
+      <form method="post" action="/save" style="border:1px solid #ddd; padding:12px;">
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <label><strong>Job name:</strong></label>
+          <input type="text" name="job_name" placeholder="e.g., Smith extension" style="width:320px; padding:6px;">
+          <button type="submit">Save Job</button>
+        </div>
+
+        <!-- carry current settings + quantities -->
+        <input type="hidden" name="vat_mode" value="{{ vat_mode }}">
+        <input type="hidden" name="purchase_mode" value="{{ purchase_mode }}">
+        {% for p in products %}
+          <input type="hidden" name="qty_{{ p.id }}" value="{{ qty_map.get(p.id,0) }}">
+        {% endfor %}
+      </form>
+
     {% endif %}
 
-    <!-- HOW IT WORKS -->
-    <section id="how" class="section">
-      <div class="section-head2">
-        <h2>How it works</h2>
-        <p class="muted">Built for site teams: simple search, clear totals, and decision-ready insights.</p>
-      </div>
+  </div>
+</div>
 
-      <div class="steps">
-        <div class="step card">
-          <div class="step-no">1</div>
-          <h3>Search like you normally do</h3>
-          <p class="muted">Type “3x2”, “osb”, “pdf”, “screws”. No perfect wording needed.</p>
-        </div>
-        <div class="step card">
-          <div class="step-no">2</div>
-          <h3>Add to basket</h3>
-          <p class="muted">Mix suppliers. We’ll handle the comparison and totals.</p>
-        </div>
-        <div class="step card">
-          <div class="step-no">3</div>
-          <h3>See the smartest checkout</h3>
-          <p class="muted">Best split vs best single supplier, plus a local-first option.</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- SHOP LOCAL -->
-    <section id="local" class="section">
-      <div class="callout">
-        <div>
-          <h2>Shop local, without paying over the odds</h2>
-          <p class="muted">
-            Local merchants often win on speed, service and returns — but pricing is hard to compare.
-            We surface local options next to national suppliers so you can choose confidently.
-          </p>
-          <ul class="ticklist">
-            <li>Faster delivery windows for urgent jobs</li>
-            <li>Simple returns and trade counter support</li>
-            <li>Keep spend in your area (and relationships strong)</li>
-          </ul>
-        </div>
-        <div class="callout-box">
-          <div class="callout-k">Local-first checkout</div>
-          <div class="callout-v">Shown in Basket insights</div>
-          <div class="muted small">Demo currently includes Cheshire/Stockport/Manchester local suppliers.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ABOUT -->
-    <section id="about" class="section">
-      <div class="about-grid">
-        <div class="card">
-          <h2>About Material Compare</h2>
-          <p class="muted">
-            We’re building the procurement layer for UK construction — a platform that helps builders
-            find the best delivered basket price across suppliers, without the spreadsheet chaos.
-          </p>
-          <p class="muted">
-            This demo is mocked pricing to show the user experience and the value of smart basket logic.
-            Next step is swapping the demo feed for live integrations (merchant APIs, trade accounts and delivery rules).
-          </p>
-        </div>
-        <div class="card">
-          <h2>Why now</h2>
-          <p class="muted">
-            Margin pressure is real. The biggest waste is time + price uncertainty:
-            multiple tabs, multiple delivery charges, inconsistent lead times.
-          </p>
-          <div class="quote">
-            “The cheapest unit price isn’t the cheapest basket once delivery and lead time are included.”
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- FOOTER CTA -->
-    <section class="cta-band">
-      <div>
-        <h2>Ready to see the savings?</h2>
-        <p class="muted">Add 3–5 items across categories and open Basket. The insight is the product.</p>
-      </div>
-      <a class="cta2" href="/">Start comparing</a>
-    </section>
-
-    <footer class="footer">
-      <div class="muted small">© Material Compare (Demo). Mocked pricing for investor demonstration.</div>
-    </footer>
-  </main>
 </body>
 </html>
