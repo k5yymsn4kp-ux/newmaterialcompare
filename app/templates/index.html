@@ -35,7 +35,7 @@
           and show whether splitting the basket saves money — with a buy-local option for trade counters.
         </p>
 
-        <form method="get" action="/" class="search hero-search">
+        <form method="get" action="/search" class="search hero-search">
           <input name="q" value="{{ q }}" placeholder="Try: 3x2, 4x2, OSB 18, MDF, pdf, screws..." />
           <button type="submit">Compare now</button>
         </form>
@@ -149,7 +149,7 @@
                   <tr>
                     <td>
   <div class="item-row">
-    <img class="thumb" src="{{ product_img(o.canonical) }}" alt="" onerror="this.style.display='none'">
+    <img class="thumb" src="/img/{{ o.canonical }}" alt="" onerror="this.style.display='none'">
     <div>
       <div class="item-title">{{ label_for(o.canonical) }}</div>
       <div class="muted small">{{ o.title }}</div>

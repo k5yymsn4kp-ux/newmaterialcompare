@@ -1,7 +1,20 @@
 from __future__ import annotations
+
+def supplier_logo(supplier: str) -> str:
+    s = supplier.lower()
+    if "toolstation" in s:
+        return "/static/logos/toolstation.svg"
+    if "screwfix" in s:
+        return "/static/logos/screwfix.svg"
+    if "jewson" in s:
+        return "/static/logos/jewson.svg"
+    if "mkm" in s:
+        return "/static/logos/mkm.svg"
+    return "/static/logos/local.svg"
+import random
 from typing import Dict, List, Optional
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.responses import RedirectResponse, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.templating import Jinja2Templates
@@ -13,6 +26,10 @@ app.add_middleware(SessionMiddleware, secret_key="demo-secret-change-me")
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
+
+# Product image directory (served via /img/<canonical>)
+from pathlib import Path
+IMG_DIR = Path(__file__).parent / 'static' / 'products'
 
 def _basket(request: Request) -> Dict[str, int]:
     request.session.setdefault("basket", {})
@@ -204,6 +221,25 @@ def compute_insights(basket: Dict[str,int]) -> dict:
         "bullets": bullets
     }
 
+
+@app.get("/img/{canonical}", response_class=HTMLResponse)
+def product_image(canonical: str):
+    # Serve first matching extension for a given canonical id
+    exts = [".jpg", ".jpeg", ".png", ".webp"]
+    for ext in exts:
+        p = IMG_DIR / f"{canonical}{ext}"
+        if p.exists():
+            return FileResponse(str(p))
+    # Simple SVG placeholder if missing
+    svg = f"""<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'>
+      <rect x='1' y='1' width='94' height='94' rx='16' fill='#f5f6f8' stroke='#e5e7eb'/>
+      <path d='M22 60l12-14 10 12 10-10 20 22H22z' fill='#cbd5e1'/>
+      <circle cx='36' cy='36' r='6' fill='#cbd5e1'/>
+      <text x='48' y='84' font-family='Arial' font-size='10' text-anchor='middle' fill='#94a3b8'>No image</text>
+    </svg>"""
+    return HTMLResponse(content=svg, media_type="image/svg+xml")
+
+
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, q: str = ""):
     offers = search_offers(q) if q else []
@@ -223,6 +259,28 @@ def home(request: Request, q: str = ""):
         "basket_count": sum(basket.values()),
         "label_for": get_label,
         "unit_for": get_unit,
+    })
+
+
+@app.get("/search", response_class=HTMLResponse)
+def search_page(request: Request, q: str = ""):
+    offers = search_offers(q) if q else []
+    grouped: Dict[str, List[Offer]] = {}
+    for o in offers:
+        grouped.setdefault(o.supplier, []).append(o)
+    for s in grouped:
+        grouped[s] = sorted(grouped[s], key=lambda x: x.price_gbp)
+
+    basket = _basket(request)
+    return templates.TemplateResponse("search.html", {
+        "request": request,
+        "q": q,
+        "grouped": grouped,
+        "suppliers_meta": SUPPLIERS,
+        "basket_count": sum(basket.values()),
+        "label_for": get_label,
+        "unit_for": get_unit,
+        "supplier_logo": supplier_logo,
     })
 
 @app.post("/add")
@@ -256,3 +314,52 @@ def clear(request: Request):
 
 def product_img(canonical: str) -> str:
     return f"/static/products/{canonical}.jpg"
+
+
+@app.get("/checkout", response_class=HTMLResponse)
+def checkout_page(request: Request):
+    basket = _basket(request)
+    lines = [{"canonical": c, "label": get_label(c), "qty": q, "unit": get_unit(c)} for c, q in basket.items()]
+    insights = compute_insights(basket)
+    return templates.TemplateResponse("checkout.html", {
+        "request": request,
+        "basket_lines": lines,
+        "insights": insights,
+        "gbp": gbp,
+        "supplier_logo": supplier_logo,
+    })
+
+@app.post("/checkout/confirm", response_class=HTMLResponse)
+def checkout_confirm(request: Request):
+    basket = _basket(request)
+    insights = compute_insights(basket)
+    split = insights.get("split_best")
+    orders = []
+    if split:
+        for supplier, block in split["breakdown"].items():
+            ref = f"MC-{random.randint(100000, 999999)}"
+            total = block["items_total"] + block["delivery"]
+            orders.append({
+                "supplier": supplier,
+                "ref": ref,
+                "delivery": block["delivery"],
+                "lead_days": block["lead_days"],
+                "total": total
+            })
+        total = split["total"]
+        lead_days = split["lead_days"]
+    else:
+        total = 0.0
+        lead_days = 0
+
+    # Clear basket after "placing order" (demo)
+    _clear(request)
+
+    return templates.TemplateResponse("confirm.html", {
+        "request": request,
+        "orders": orders,
+        "total": total,
+        "lead_days": lead_days,
+        "gbp": gbp,
+        "supplier_logo": supplier_logo,
+    })

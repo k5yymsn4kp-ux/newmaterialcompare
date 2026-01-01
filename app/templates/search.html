@@ -1,0 +1,114 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Search · Material Compare (Demo)</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">MC</div>
+      <div>
+        <div class="title">Search</div>
+        <div class="subtitle">Compare items across suppliers · add to basket · checkout routes orders (demo)</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a class="basket" href="/basket">Basket <span class="pill">{{ basket_count }}</span></a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section class="card">
+      <form method="get" action="/search" class="search">
+        <input name="q" value="{{ q }}" placeholder="Try: 3x2, 4x2, OSB, MDF, ply, screws..." />
+        <button type="submit">Search</button>
+      </form>
+      {% if q %}
+        <div class="muted small" style="margin-top:8px;">
+          Tip: add 3–5 lines across timber + sheets + fixings, then open Basket for savings & checkout routing.
+        </div>
+      {% endif %}
+    </section>
+
+    {% if q and not grouped %}
+      <section class="card">
+        <h2>No results</h2>
+        <p class="muted">Try “screws”, “3x2”, “4x2”, “osb 18”, “mdf”, “ply”.</p>
+      </section>
+    {% endif %}
+
+    {% if grouped %}
+      <section class="results-head">
+        <h2>Results for “{{ q }}”</h2>
+        <p class="muted">Stacked supplier view (Toolstation-style scanning). Cheapest unit prices shown — basket totals include delivery.</p>
+      </section>
+
+      <section class="stack">
+        {% for supplier, offers in grouped.items() %}
+          <div class="card supplier-card">
+            <div class="supplier-bar">
+              <div class="supplier-left">
+                <img class="supplier-logo" src="{{ supplier_logo(supplier) }}" alt="{{ supplier }} logo" onerror="this.style.display='none'">
+                <div>
+                  <h3 style="margin:0;">{{ supplier }}</h3>
+                  <div class="muted small">
+                    {{ suppliers_meta[supplier].type }}{% if suppliers_meta[supplier].local %} · Local{% endif %}
+                    · Delivery £{{ '%.2f'|format(suppliers_meta[supplier].delivery_gbp) }}
+                    · Lead {{ suppliers_meta[supplier].lead_days }} day(s)
+                  </div>
+                </div>
+              </div>
+
+              <div class="supplier-right">
+                <div class="muted small">Cheapest for this search</div>
+                <div class="price-strong">
+                  £{{ '%.2f'|format(offers[0].price_gbp) }}
+                  <span class="pill2 best">Cheapest</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="muted small" style="margin-top:8px;">{{ suppliers_meta[supplier].copy }}</div>
+
+            <div class="offers">
+              {% for o in offers %}
+                <div class="offer-row">
+                  <div class="offer-left">
+                    <img class="thumb" src="/img/{{ o.canonical }}" alt="" onerror="this.style.display='none'">
+                    <div>
+                      <div class="item-title">{{ label_for(o.canonical) }}</div>
+                      <div class="muted small">{{ o.title }}</div>
+                    </div>
+                  </div>
+
+                  <div class="offer-mid muted small">
+                    {{ o.unit }}
+                  </div>
+
+                  <div class="offer-price">
+                    £{{ '%.2f'|format(o.price_gbp) }}
+                  </div>
+
+                  <div class="offer-add">
+                    <form method="post" action="/add" class="addform">
+                      <input type="hidden" name="canonical" value="{{ o.canonical }}" />
+                      <input type="hidden" name="return_to" value="/search?q={{ q | urlencode }}" />
+                      <input class="qty" type="number" name="qty" value="1" min="1" />
+                      <button type="submit">Add</button>
+                    </form>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+
+          </div>
+        {% endfor %}
+      </section>
+    {% endif %}
+  </main>
+</body>
+</html>

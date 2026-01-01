@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Order confirmed · Material Compare (Demo)</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">MC</div>
+      <div>
+        <div class="title">Order confirmed</div>
+        <div class="subtitle">Demo confirmation · orders created with suppliers</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/search">Search</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section class="card">
+      <h2>Thanks — your order is placed (demo)</h2>
+      <p class="muted">We’ve created supplier orders and combined them into one confirmation for you.</p>
+
+      <div class="kpis kpis-3">
+        <div class="kpi">
+          <div class="kpi-label">Total paid</div>
+          <div class="kpi-value">{{ gbp(total) }}</div>
+          <div class="muted small">Includes delivery</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Supplier orders</div>
+          <div class="kpi-value">{{ orders|length }}</div>
+          <div class="muted small">Auto-split</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Max lead time</div>
+          <div class="kpi-value">{{ lead_days }}d</div>
+          <div class="muted small">Worst-case delivery</div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:14px;">Orders created</h3>
+      <div class="stack">
+        {% for o in orders %}
+          <div class="card route">
+            <div class="route-head">
+              <div class="route-left">
+                <img class="supplier-logo" src="{{ supplier_logo(o.supplier) }}" alt="" onerror="this.style.display='none'">
+                <div>
+                  <strong>{{ o.supplier }}</strong>
+                  <div class="muted small">Order ref: {{ o.ref }} · Delivery {{ gbp(o.delivery) }} · Lead {{ o.lead_days }} day(s)</div>
+                </div>
+              </div>
+              <div class="route-total">{{ gbp(o.total) }}</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="cta-band" style="margin-top:16px;">
+        <div>
+          <h2 style="margin:0;">Keep comparing</h2>
+          <p class="muted" style="margin:6px 0 0;">Add more lines to see bigger savings and smarter routing.</p>
+        </div>
+        <a class="cta2" href="/search">New search</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

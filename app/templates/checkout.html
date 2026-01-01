@@ -1,0 +1,121 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Checkout · Material Compare (Demo)</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">MC</div>
+      <div>
+        <div class="title">Checkout</div>
+        <div class="subtitle">Review basket · see order routing · place orders (demo)</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <a href="/search">Search</a>
+      <a class="basket" href="/basket">Back to basket</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    {% if not basket_lines %}
+      <section class="card">
+        <h2>Your basket is empty</h2>
+        <p class="muted">Add items from search, then return here to checkout.</p>
+        <a class="cta2" href="/search">Go to search</a>
+      </section>
+    {% else %}
+      <section class="grid-2">
+        <div class="card">
+          <h2>Order summary</h2>
+          <div class="kpis kpis-3">
+            <div class="kpi">
+              <div class="kpi-label">Best split total</div>
+              <div class="kpi-value">{{ gbp(insights.split_best.total) }}</div>
+              <div class="muted small">Lead {{ insights.split_best.lead_days }} day(s)</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Delivery</div>
+              <div class="kpi-value">{{ gbp(insights.split_best.delivery_total) }}</div>
+              <div class="muted small">{{ insights.split_best.breakdown|length }} supplier(s)</div>
+            </div>
+            <div class="kpi">
+              <div class="kpi-label">Orders created</div>
+              <div class="kpi-value">{{ insights.split_best.breakdown|length }}</div>
+              <div class="muted small">One per supplier</div>
+            </div>
+          </div>
+
+          <div class="note" style="margin-top:12px;">
+            <strong>What happens next (demo):</strong> we place separate orders with each supplier, then show you one combined confirmation.
+          </div>
+
+          <h3 style="margin-top:14px;">Basket lines</h3>
+          <table class="table tight">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th class="right">Qty</th>
+                <th class="right">Unit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for line in basket_lines %}
+                <tr>
+                  <td>{{ line.label }}</td>
+                  <td class="right">{{ line.qty }}</td>
+                  <td class="right">{{ line.unit }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+        </div>
+
+        <div class="card">
+          <h2>Order routing (best split)</h2>
+          <p class="muted small">This is the “value” of the platform: you get the best delivered basket, without manually splitting orders.</p>
+
+          {% for supplier, block in insights.split_best.breakdown.items() %}
+            <div class="route">
+              <div class="route-head">
+                <div class="route-left">
+                  <img class="supplier-logo" src="{{ supplier_logo(supplier) }}" alt="" onerror="this.style.display='none'">
+                  <div>
+                    <strong>{{ supplier }}</strong>
+                    <div class="muted small">Delivery {{ gbp(block.delivery) }} · Lead {{ block.lead_days }} day(s)</div>
+                  </div>
+                </div>
+                <div class="route-total">{{ gbp(block.items_total + block.delivery) }}</div>
+              </div>
+
+              <ul class="lines">
+                {% for l in block.lines %}
+                  <li>
+                    <span>{{ l.label }} × {{ l.qty }}</span>
+                    <span class="muted">{{ gbp(l.line_total) }}</span>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endfor %}
+
+          <form method="post" action="/checkout/confirm" style="margin-top:14px;">
+            <button type="submit" class="btn-primary" style="width:100%;padding:12px 14px;font-weight:1000;">
+              Place order (demo)
+            </button>
+          </form>
+
+          <div class="muted small" style="margin-top:10px;">
+            No payment in demo. This generates a confirmation page and clears the basket.
+          </div>
+        </div>
+      </section>
+    {% endif %}
+  </main>
+</body>
+</html>
