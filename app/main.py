@@ -6,7 +6,7 @@ from datetime import datetime
 import uuid
 import random
 import re
-from collections import Counter, defaultdict
+from collections import Counter
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -30,7 +30,7 @@ SUPPLIER_PRICE_TYPE = {
 def make_prices(category: str, base: float, rng: random.Random):
     """
     Demo realism:
-    - Merchants (MKM/Jewson/Huws Gray) cheaper on timber/sheet/insulation/drylining/aggregates
+    - Merchants cheaper on timber/sheet/insulation/drylining/aggregates
     - Toolstation/Screwfix cheaper on fixings/tools
     """
     if category in ("timber", "sheet", "insulation", "drylining", "aggregates"):
@@ -121,7 +121,6 @@ def generate_demo_products():
         ],
     }
 
-    # ~650 items total (feels like thousands in demo)
     for cat, rows in specs.items():
         for name_base, variants, base_price in rows:
             for v in variants:
@@ -133,7 +132,6 @@ def generate_demo_products():
                         name = f"{name_base} {v}mm 2440x1220"
                         base = base_price * (v / 12)
                     elif cat in ("fixings", "tools"):
-                        # make screws/fixings feel real
                         if re.search(r"\d(\.\d)?x\d+", str(v)):
                             name = f"{name_base} {v} (box {max(100, pack*100)})"
                             base = base_price * (0.85 + (pack * 0.07))
@@ -146,7 +144,6 @@ def generate_demo_products():
 
                     catalogue.append({"id": pid, "category": cat, "name": name, "prices": make_prices(cat, max(1.25, base), rng)})
                     pid += 1
-
                     if len(catalogue) >= 650:
                         return catalogue
     return catalogue
@@ -169,10 +166,25 @@ def find_product(pid: int):
             return p
     return None
 
-def best_supplier_and_price(product):
-    prices = {s: float(product["prices"][s]) for s in SUPPLIERS}
-    best = min(SUPPLIERS, key=lambda s: prices[s])
-    return best, prices[best]
+def supplier_prices_sorted(product):
+    rows = []
+    for s in SUPPLIERS:
+        rows.append({
+            "supplier": s,
+            "label": SUPPLIER_PRICE_TYPE.get(s, "Online"),
+            "price": float(product["prices"][s]),
+        })
+    rows.sort(key=lambda r: r["price"])
+    return rows
+
+def best_and_second(product):
+    rows = supplier_prices_sorted(product)
+    best = rows[0]
+    second = rows[1] if len(rows) > 1 else None
+    saving = 0.0
+    if second:
+        saving = max(0.0, float(second["price"]) - float(best["price"]))
+    return best, second, saving, rows
 
 def category_list():
     cats = {}
@@ -191,7 +203,6 @@ def category_list():
 def search_pool(q: str, cat: str = ""):
     q = (q or "").strip().lower()
     cat = (cat or "").strip().lower()
-
     results = PRODUCTS
     if cat:
         results = [p for p in results if p["category"] == cat]
@@ -200,18 +211,12 @@ def search_pool(q: str, cat: str = ""):
     return results
 
 def parse_screw_size(name: str):
-    """
-    Extract diameter/length from patterns like 5x80 or 7.5x120
-    """
     m = re.search(r"(\d+(?:\.\d+)?)x(\d+)", name.lower())
     if not m:
         return None, None
     return float(m.group(1)), int(m.group(2))
 
 def derive_facets(items):
-    """
-    Toolstation-like facet sidebar: Brand, Diameter, Length, Category.
-    """
     brands = Counter()
     diams = Counter()
     lengths = Counter()
@@ -219,8 +224,6 @@ def derive_facets(items):
 
     for p in items:
         cats[p["category"]] += 1
-
-        # brand = first word in name for fixings/tools style (ForgeFast, Spectre, TurboGold)
         first = p["name"].split(" ")[0].strip()
         if first and first[0].isalpha() and len(first) <= 12:
             brands[first] += 1
@@ -241,7 +244,6 @@ def apply_filters(items, brand: str = "", diameter: str = "", length: str = ""):
     brand = (brand or "").strip()
     diameter = (diameter or "").strip()
     length = (length or "").strip()
-
     out = items
 
     if brand:
@@ -261,14 +263,12 @@ def apply_filters(items, brand: str = "", diameter: str = "", length: str = ""):
     return out
 
 def sort_items(items, sort: str):
-    # Toolstation-ish sorting options
     if sort == "price_asc":
-        return sorted(items, key=lambda p: best_supplier_and_price(p)[1])
+        return sorted(items, key=lambda p: best_and_second(p)[0]["price"])
     if sort == "price_desc":
-        return sorted(items, key=lambda p: best_supplier_and_price(p)[1], reverse=True)
+        return sorted(items, key=lambda p: best_and_second(p)[0]["price"], reverse=True)
     if sort == "alpha":
         return sorted(items, key=lambda p: p["name"].lower())
-    # default: relevance-ish (keep generation order)
     return items
 
 def basket_items():
@@ -280,11 +280,6 @@ def basket_items():
     return items
 
 def pick_split_supplier(product):
-    """
-    Builder realism:
-    - For timber/sheet/insulation/drylining/aggregates: prefer merchants if close to cheapest.
-    - For fixings/tools: price decides (often TS/SF).
-    """
     prices = {s: float(product["prices"][s]) for s in SUPPLIERS}
     absolute_cheapest = min(SUPPLIERS, key=lambda s: prices[s])
     abs_price = prices[absolute_cheapest]
@@ -346,20 +341,12 @@ def calculate_totals(vat_mode: str):
 # Routes
 # -------------------------
 @app.get("/", response_class=HTMLResponse)
-def home(request: Request, q: str = "", cat: str = ""):
-    # Home stays "offer-led". No results unless you search/category (handled by /search)
+def home(request: Request):
     cats = category_list()
     basket_count = sum(int(v) for v in BASKET.values()) if BASKET else 0
-
     return templates.TemplateResponse(
         "home.html",
-        {
-            "request": request,
-            "q": q,
-            "cat": cat,
-            "categories": cats,
-            "basket_count": basket_count,
-        }
+        {"request": request, "categories": cats, "basket_count": basket_count},
     )
 
 @app.get("/search", response_class=HTMLResponse)
@@ -377,15 +364,22 @@ def search_page(
     filtered = apply_filters(pool, brand=brand, diameter=diameter, length=length)
     filtered = sort_items(filtered, sort)
 
-    # add best price info for cards
     cards = []
     for p in filtered[:48]:
-        best_s, best_p = best_supplier_and_price(p)
+        best, second, saving, rows = best_and_second(p)
+        # mark top 2 for mini table styling
+        for i, r in enumerate(rows):
+            r["is_best"] = (i == 0)
+            r["is_second"] = (i == 1)
         cards.append({
             **p,
-            "best_supplier": best_s,
-            "best_price": best_p,
-            "best_label": SUPPLIER_PRICE_TYPE.get(best_s, "Online"),
+            "best_supplier": best["supplier"],
+            "best_price": float(best["price"]),
+            "best_label": best["label"],
+            "second_supplier": second["supplier"] if second else "",
+            "second_price": float(second["price"]) if second else 0.0,
+            "save_vs_second": float(f"{saving:.2f}"),
+            "mini_rows": rows[:5],  # show top 5 suppliers (we have 5 total anyway)
         })
 
     basket_count = sum(int(v) for v in BASKET.values()) if BASKET else 0
@@ -413,18 +407,12 @@ def product_page(request: Request, pid: int):
     if not p:
         return RedirectResponse(url="/search", status_code=303)
 
-    best_s, best_p = best_supplier_and_price(p)
-    basket_count = sum(int(v) for v in BASKET.values()) if BASKET else 0
+    best, second, saving, rows = best_and_second(p)
+    for i, r in enumerate(rows):
+        r["is_best"] = (i == 0)
+        r["is_second"] = (i == 1)
 
-    # build price rows for table + cheapest flag
-    price_rows = []
-    for s in SUPPLIERS:
-        price_rows.append({
-            "supplier": s,
-            "label": SUPPLIER_PRICE_TYPE.get(s, "Online"),
-            "price": float(p["prices"][s]),
-            "is_best": (s == best_s),
-        })
+    basket_count = sum(int(v) for v in BASKET.values()) if BASKET else 0
 
     return templates.TemplateResponse(
         "product.html",
@@ -432,9 +420,12 @@ def product_page(request: Request, pid: int):
             "request": request,
             "p": p,
             "basket_count": basket_count,
-            "best_supplier": best_s,
-            "best_price": best_p,
-            "price_rows": price_rows,
+            "best_supplier": best["supplier"],
+            "best_price": float(best["price"]),
+            "save_vs_second": float(f"{saving:.2f}"),
+            "second_supplier": second["supplier"] if second else "",
+            "second_price": float(second["price"]) if second else 0.0,
+            "price_rows": rows,
         }
     )
 
@@ -446,8 +437,6 @@ async def basket_add(request: Request):
     if qty < 1:
         qty = 1
     BASKET[pid] = BASKET.get(pid, 0) + qty
-
-    # return to previous page if present, else search
     next_url = form.get("next") or "/search"
     return RedirectResponse(url=next_url, status_code=303)
 

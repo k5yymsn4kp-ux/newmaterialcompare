@@ -634,3 +634,41 @@ h3{ font-size:15px; margin:0 0 10px; color:var(--muted); font-weight:700; }
   border:1px solid rgba(34,197,94,.22);
   color:#166534;
 }
+
+/* Mini supplier compare + save badge */
+.badge.save{
+  background: rgba(34,197,94,.12);
+  border:1px solid rgba(34,197,94,.22);
+  color:#166534;
+}
+
+.pc-price-row{ display:flex; justify-content:space-between; gap:12px; align-items:flex-end; }
+.pc-compare{ text-align:right; }
+
+.mini-compare{
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:12px;
+  overflow:hidden;
+  background:#fff;
+}
+.mini-row{
+  display:grid;
+  grid-template-columns: 1fr auto auto;
+  gap:10px;
+  padding:7px 10px;
+  border-top:1px solid rgba(0,0,0,.06);
+  font-size:12px;
+  align-items:center;
+}
+.mini-row:first-child{ border-top:none; }
+.mini-s{ font-weight:900; }
+.mini-l{ color: var(--muted); font-size:11px; }
+.mini-p{ font-weight:900; justify-self:end; }
+
+.mini-row.is-best{
+  background: rgba(34,197,94,.10);
+}
+.mini-row.is-second{
+  background: rgba(234,179,8,.10);
+}
+

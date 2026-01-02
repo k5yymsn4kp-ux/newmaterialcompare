@@ -73,7 +73,6 @@
 
   <div class="search-layout">
 
-    <!-- Filters (Toolstation-style left rail) -->
     <aside class="filters">
       <div class="filter-card">
         <div class="filter-title">Filters</div>
@@ -118,12 +117,11 @@
         </form>
 
         <div class="filter-note small muted">
-          Built for quoting — filters are “good enough” for demo. Next phase: spec-level matching & AI synonyms.
+          Demo filters. Next phase: spec-level matching & AI synonyms (4x2 = CLS, etc.).
         </div>
       </div>
     </aside>
 
-    <!-- Results grid -->
     <main class="results">
       <div class="grid">
         {% for p in cards %}
@@ -138,12 +136,35 @@
               <div class="pc-meta">
                 <span class="badge">{{ p.category }}</span>
                 <span class="badge ghost">{{ p.best_label }}</span>
+                {% if p.save_vs_second > 0 %}
+                  <span class="badge save">Save £{{ "%.2f"|format(p.save_vs_second) }} vs 2nd</span>
+                {% endif %}
               </div>
 
               <div class="pc-price">
-                <div class="pc-from">Best price</div>
-                <div class="pc-amount">£{{ "%.2f"|format(p.best_price) }}</div>
-                <div class="pc-supplier">from <strong>{{ p.best_supplier }}</strong></div>
+                <div class="pc-price-row">
+                  <div>
+                    <div class="pc-from">Cheapest</div>
+                    <div class="pc-amount">£{{ "%.2f"|format(p.best_price) }}</div>
+                    <div class="pc-supplier">from <strong>{{ p.best_supplier }}</strong></div>
+                  </div>
+                  <div class="pc-compare">
+                    <div class="pc-from">2nd cheapest</div>
+                    <div class="pc-amount small">£{{ "%.2f"|format(p.second_price) }}</div>
+                    <div class="pc-supplier">from <strong>{{ p.second_supplier }}</strong></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Mini supplier comparison table -->
+              <div class="mini-compare">
+                {% for r in p.mini_rows %}
+                  <div class="mini-row {% if r.is_best %}is-best{% elif r.is_second %}is-second{% endif %}">
+                    <span class="mini-s">{{ r.supplier }}</span>
+                    <span class="mini-l">{{ r.label }}</span>
+                    <span class="mini-p">£{{ "%.2f"|format(r.price) }}</span>
+                  </div>
+                {% endfor %}
               </div>
 
               <div class="pc-actions">
@@ -162,7 +183,7 @@
 
       {% if results_total == 0 %}
         <div class="card card-pad">
-          No results. Try a broader term like “screws”, “4x2” or “OSB”.
+          No results. Try “screws”, “4x2” or “OSB”.
         </div>
       {% endif %}
     </main>
