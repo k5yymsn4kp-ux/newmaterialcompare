@@ -5,6 +5,8 @@ from fastapi.templating import Jinja2Templates
 from datetime import datetime
 import uuid
 import random
+import re
+from collections import Counter, defaultdict
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -99,10 +101,12 @@ def generate_demo_products():
             ("Metal Stud Track 3m", [50, 70], 6.00),
         ],
         "fixings": [
-            ("Wood Screws", ["4x40", "4x50", "5x80", "5x100"], 7.50),
+            ("ForgeFast Wood Screws", ["4x40", "4x50", "5x80", "5x100"], 7.50),
+            ("Spectre Multi-Purpose Screws", ["4x40", "4x60", "4x70", "5x80"], 8.20),
+            ("TurboGold Screws", ["4x40", "4x50", "5x80", "5x100"], 7.90),
             ("Masonry Screws", ["7.5x100", "7.5x120", "7.5x150"], 12.00),
             ("Wall Plugs (pack 100)", ["red", "brown", "blue"], 4.50),
-            ("Nails (kg)", ["clout", "lost head", "galv round wire"], 6.20),
+            ("Angle Brackets", ["50mm", "75mm", "100mm"], 6.20),
         ],
         "tools": [
             ("Diamond Blade 115mm", ["general", "tile"], 14.00),
@@ -129,8 +133,13 @@ def generate_demo_products():
                         name = f"{name_base} {v}mm 2440x1220"
                         base = base_price * (v / 12)
                     elif cat in ("fixings", "tools"):
-                        name = f"{name_base} {v} (pack {pack})"
-                        base = base_price * (0.85 + (pack * 0.07))
+                        # make screws/fixings feel real
+                        if re.search(r"\d(\.\d)?x\d+", str(v)):
+                            name = f"{name_base} {v} (box {max(100, pack*100)})"
+                            base = base_price * (0.85 + (pack * 0.07))
+                        else:
+                            name = f"{name_base} {v} (pack {pack})"
+                            base = base_price * (0.90 + (pack * 0.06))
                     else:
                         name = f"{name_base}"
                         base = base_price * (0.95 + (pack * 0.03))
@@ -151,11 +160,19 @@ BASKET = {}
 SETTINGS = {"vat_mode": "ex", "purchase_mode": "single"}
 JOBS = {}
 
+# -------------------------
+# Helpers
+# -------------------------
 def find_product(pid: int):
     for p in PRODUCTS:
         if p["id"] == pid:
             return p
     return None
+
+def best_supplier_and_price(product):
+    prices = {s: float(product["prices"][s]) for s in SUPPLIERS}
+    best = min(SUPPLIERS, key=lambda s: prices[s])
+    return best, prices[best]
 
 def category_list():
     cats = {}
@@ -171,7 +188,7 @@ def category_list():
             out.append((c, n))
     return out
 
-def search_products(q: str, cat: str = ""):
+def search_pool(q: str, cat: str = ""):
     q = (q or "").strip().lower()
     cat = (cat or "").strip().lower()
 
@@ -180,7 +197,79 @@ def search_products(q: str, cat: str = ""):
         results = [p for p in results if p["category"] == cat]
     if q:
         results = [p for p in results if q in p["name"].lower()]
-    return results[:25]
+    return results
+
+def parse_screw_size(name: str):
+    """
+    Extract diameter/length from patterns like 5x80 or 7.5x120
+    """
+    m = re.search(r"(\d+(?:\.\d+)?)x(\d+)", name.lower())
+    if not m:
+        return None, None
+    return float(m.group(1)), int(m.group(2))
+
+def derive_facets(items):
+    """
+    Toolstation-like facet sidebar: Brand, Diameter, Length, Category.
+    """
+    brands = Counter()
+    diams = Counter()
+    lengths = Counter()
+    cats = Counter()
+
+    for p in items:
+        cats[p["category"]] += 1
+
+        # brand = first word in name for fixings/tools style (ForgeFast, Spectre, TurboGold)
+        first = p["name"].split(" ")[0].strip()
+        if first and first[0].isalpha() and len(first) <= 12:
+            brands[first] += 1
+
+        d, l = parse_screw_size(p["name"])
+        if d is not None and l is not None:
+            diams[str(d).rstrip("0").rstrip(".")] += 1
+            lengths[str(l)] += 1
+
+    return {
+        "brands": brands.most_common(10),
+        "diameters": diams.most_common(10),
+        "lengths": lengths.most_common(10),
+        "categories": cats.most_common(),
+    }
+
+def apply_filters(items, brand: str = "", diameter: str = "", length: str = ""):
+    brand = (brand or "").strip()
+    diameter = (diameter or "").strip()
+    length = (length or "").strip()
+
+    out = items
+
+    if brand:
+        out = [p for p in out if p["name"].split(" ")[0].strip() == brand]
+
+    if diameter or length:
+        filtered = []
+        for p in out:
+            d, l = parse_screw_size(p["name"])
+            if diameter and (d is None or str(d).rstrip("0").rstrip(".") != diameter):
+                continue
+            if length and (l is None or str(l) != length):
+                continue
+            filtered.append(p)
+        out = filtered
+
+    return out
+
+def sort_items(items, sort: str):
+    # Toolstation-ish sorting options
+    if sort == "price_asc":
+        return sorted(items, key=lambda p: best_supplier_and_price(p)[1])
+    if sort == "price_desc":
+        return sorted(items, key=lambda p: best_supplier_and_price(p)[1], reverse=True)
+    if sort == "alpha":
+        return sorted(items, key=lambda p: p["name"].lower())
+    # default: relevance-ish (keep generation order)
+    return items
 
 def basket_items():
     items = []
@@ -194,7 +283,7 @@ def pick_split_supplier(product):
     """
     Builder realism:
     - For timber/sheet/insulation/drylining/aggregates: prefer merchants if close to cheapest.
-    - For fixings/tools: Screwfix/Toolstation often win, let price decide.
+    - For fixings/tools: price decides (often TS/SF).
     """
     prices = {s: float(product["prices"][s]) for s in SUPPLIERS}
     absolute_cheapest = min(SUPPLIERS, key=lambda s: prices[s])
@@ -253,12 +342,12 @@ def calculate_totals(vat_mode: str):
         "mode_saving": mode_saving,
     }
 
+# -------------------------
+# Routes
+# -------------------------
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, q: str = "", cat: str = ""):
-    # Key behaviour: only show results if user searches OR selects category
-    show_results = bool((q or "").strip() or (cat or "").strip())
-
-    results = search_products(q, cat) if show_results else []
+    # Home stays "offer-led". No results unless you search/category (handled by /search)
     cats = category_list()
     basket_count = sum(int(v) for v in BASKET.values()) if BASKET else 0
 
@@ -268,10 +357,84 @@ def home(request: Request, q: str = "", cat: str = ""):
             "request": request,
             "q": q,
             "cat": cat,
-            "show_results": show_results,
-            "results": results,
             "categories": cats,
             "basket_count": basket_count,
+        }
+    )
+
+@app.get("/search", response_class=HTMLResponse)
+def search_page(
+    request: Request,
+    q: str = "",
+    cat: str = "",
+    brand: str = "",
+    diameter: str = "",
+    length: str = "",
+    sort: str = "relevance",
+):
+    pool = search_pool(q, cat)
+    facets = derive_facets(pool)
+    filtered = apply_filters(pool, brand=brand, diameter=diameter, length=length)
+    filtered = sort_items(filtered, sort)
+
+    # add best price info for cards
+    cards = []
+    for p in filtered[:48]:
+        best_s, best_p = best_supplier_and_price(p)
+        cards.append({
+            **p,
+            "best_supplier": best_s,
+            "best_price": best_p,
+            "best_label": SUPPLIER_PRICE_TYPE.get(best_s, "Online"),
+        })
+
+    basket_count = sum(int(v) for v in BASKET.values()) if BASKET else 0
+
+    return templates.TemplateResponse(
+        "search.html",
+        {
+            "request": request,
+            "q": q,
+            "cat": cat,
+            "brand": brand,
+            "diameter": diameter,
+            "length": length,
+            "sort": sort,
+            "basket_count": basket_count,
+            "facets": facets,
+            "results_total": len(filtered),
+            "cards": cards,
+        }
+    )
+
+@app.get("/product/{pid}", response_class=HTMLResponse)
+def product_page(request: Request, pid: int):
+    p = find_product(pid)
+    if not p:
+        return RedirectResponse(url="/search", status_code=303)
+
+    best_s, best_p = best_supplier_and_price(p)
+    basket_count = sum(int(v) for v in BASKET.values()) if BASKET else 0
+
+    # build price rows for table + cheapest flag
+    price_rows = []
+    for s in SUPPLIERS:
+        price_rows.append({
+            "supplier": s,
+            "label": SUPPLIER_PRICE_TYPE.get(s, "Online"),
+            "price": float(p["prices"][s]),
+            "is_best": (s == best_s),
+        })
+
+    return templates.TemplateResponse(
+        "product.html",
+        {
+            "request": request,
+            "p": p,
+            "basket_count": basket_count,
+            "best_supplier": best_s,
+            "best_price": best_p,
+            "price_rows": price_rows,
         }
     )
 
@@ -283,7 +446,10 @@ async def basket_add(request: Request):
     if qty < 1:
         qty = 1
     BASKET[pid] = BASKET.get(pid, 0) + qty
-    return RedirectResponse(url="/", status_code=303)
+
+    # return to previous page if present, else search
+    next_url = form.get("next") or "/search"
+    return RedirectResponse(url=next_url, status_code=303)
 
 @app.post("/basket/update")
 async def basket_update(request: Request):

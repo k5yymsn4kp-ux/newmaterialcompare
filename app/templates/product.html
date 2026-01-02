@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{{ p.name }} • Material Compare</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="promo-strip">
+  <div class="promo-inner">
+    <div class="promo-item"><span class="promo-dot"></span><strong>Price-first</strong><span>Basket totals</span></div>
+    <div class="promo-item"><span class="promo-dot"></span><strong>Trade-ready</strong><span>“My account” labels</span></div>
+    <div class="promo-item"><span class="promo-dot"></span><strong>Fast quoting</strong><span>Extensions & refurbs</span></div>
+    <div class="promo-item"><span class="promo-dot"></span><strong>Click & collect</strong><span>Delivery stays quiet</span></div>
+  </div>
+</div>
+
+<div class="topbar topbar-tool">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-badge brand-badge-red"></div>
+      <div>
+        <a href="/" style="color:inherit; text-decoration:none;">Material Compare</a>
+        <small>Product comparison</small>
+      </div>
+    </div>
+
+    <form class="top-search" method="get" action="/search">
+      <input class="top-search-field" name="q" value="" placeholder="Search products…" />
+      <button class="top-search-btn" type="submit">Search</button>
+    </form>
+
+    <div class="nav-actions">
+      <a class="pill pill-strong" href="/basket">Basket <span class="count">{{ basket_count }}</span></a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="breadcrumb">
+    <a href="/">Home</a> <span>›</span>
+    <a href="/search?cat={{ p.category }}">{{ p.category }}</a> <span>›</span>
+    <span>{{ p.name }}</span>
+  </div>
+
+  <div class="product-layout">
+    <div class="product-media"></div>
+
+    <div class="product-main">
+      <h1 class="product-title">{{ p.name }}</h1>
+      <div class="product-sub muted small">
+        Category: <strong style="text-transform:capitalize;">{{ p.category }}</strong>
+      </div>
+
+      <div class="product-hero">
+        <div>
+          <div class="muted small">Best price</div>
+          <div class="hero-price">£{{ "%.2f"|format(best_price) }}</div>
+          <div class="muted small">from <strong>{{ best_supplier }}</strong></div>
+        </div>
+
+        <form method="post" action="/basket/add" class="product-add">
+          <input type="hidden" name="product_id" value="{{ p.id }}">
+          <input type="hidden" name="next" value="/product/{{ p.id }}">
+          <input class="field qty" type="number" name="qty" value="1" min="1">
+          <button class="btn btn-primary" type="submit">Add to basket</button>
+        </form>
+      </div>
+
+      <div class="card card-pad">
+        <div class="section-head" style="margin:0 0 10px;">
+          <h2 style="margin:0;">Compare suppliers</h2>
+          <span class="small muted">Shows Online vs My account labels</span>
+        </div>
+
+        <table class="table">
+          <tr>
+            <th>Supplier</th>
+            <th>Type</th>
+            <th>Price</th>
+          </tr>
+          {% for r in price_rows %}
+          <tr class="{% if r.is_best %}row-best{% endif %}">
+            <td><strong>{{ r.supplier }}</strong></td>
+            <td><span class="badge {% if r.label=='My account' %}ghost{% endif %}">{{ r.label }}</span></td>
+            <td>
+              <strong>£{{ "%.2f"|format(r.price) }}</strong>
+              {% if r.is_best %}<span class="best-tag">Cheapest</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+
+      <div class="card card-pad">
+        <h2 style="margin:0 0 8px;">Why this matters for quoting</h2>
+        <p class="muted" style="margin:0;">
+          Builders don’t buy one line at a time — they buy a basket for a job. This page shows the true cheapest supplier for this line,
+          and your basket page shows the true cheapest supplier for the whole quote.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

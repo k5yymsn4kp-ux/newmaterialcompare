@@ -1,114 +1,174 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Search · Material Compare (Demo)</title>
-  <link rel="stylesheet" href="/static/style.css" />
+  <title>Search • Material Compare</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <header class="topbar">
+
+<div class="promo-strip">
+  <div class="promo-inner">
+    <div class="promo-item"><span class="promo-dot"></span><strong>Price-first</strong><span>Basket totals</span></div>
+    <div class="promo-item"><span class="promo-dot"></span><strong>Trade-ready</strong><span>“My account” labels</span></div>
+    <div class="promo-item"><span class="promo-dot"></span><strong>Fast quoting</strong><span>Extensions & refurbs</span></div>
+    <div class="promo-item"><span class="promo-dot"></span><strong>Click & collect</strong><span>Delivery stays quiet</span></div>
+  </div>
+</div>
+
+<div class="topbar topbar-tool">
+  <div class="topbar-inner">
     <div class="brand">
-      <div class="logo">MC</div>
+      <div class="brand-badge brand-badge-red"></div>
       <div>
-        <div class="title">Search</div>
-        <div class="subtitle">Compare items across suppliers · add to basket · checkout routes orders (demo)</div>
+        <a href="/" style="color:inherit; text-decoration:none;">Material Compare</a>
+        <small>Search & compare prices</small>
       </div>
     </div>
-    <nav class="nav">
-      <a href="/">Home</a>
-      <a class="basket" href="/basket">Basket <span class="pill">{{ basket_count }}</span></a>
-    </nav>
-  </header>
 
-  <main class="wrap">
-    <section class="card">
-      <form method="get" action="/search" class="search">
-        <input name="q" value="{{ q }}" placeholder="Try: 3x2, 4x2, OSB, MDF, ply, screws..." />
-        <button type="submit">Search</button>
-      </form>
-      {% if q %}
-        <div class="muted small" style="margin-top:8px;">
-          Tip: add 3–5 lines across timber + sheets + fixings, then open Basket for savings & checkout routing.
-        </div>
-      {% endif %}
-    </section>
+    <form class="top-search" method="get" action="/search">
+      <input type="hidden" name="cat" value="{{ cat }}">
+      <input class="top-search-field" name="q" value="{{ q }}" placeholder="Search products…" />
+      <button class="top-search-btn" type="submit">Search</button>
+    </form>
 
-    {% if q and not grouped %}
-      <section class="card">
-        <h2>No results</h2>
-        <p class="muted">Try “screws”, “3x2”, “4x2”, “osb 18”, “mdf”, “ply”.</p>
-      </section>
-    {% endif %}
+    <div class="nav-actions">
+      <a class="pill pill-strong" href="/basket">Basket <span class="count">{{ basket_count }}</span></a>
+    </div>
+  </div>
+</div>
 
-    {% if grouped %}
-      <section class="results-head">
-        <h2>Results for “{{ q }}”</h2>
-        <p class="muted">Stacked supplier view (Toolstation-style scanning). Cheapest unit prices shown — basket totals include delivery.</p>
-      </section>
+<div class="container">
 
-      <section class="stack">
-        {% for supplier, offers in grouped.items() %}
-          <div class="card supplier-card">
-            <div class="supplier-bar">
-              <div class="supplier-left">
-                <img class="supplier-logo" src="{{ supplier_logo(supplier) }}" alt="{{ supplier }} logo" onerror="this.style.display='none'">
-                <div>
-                  <h3 style="margin:0;">{{ supplier }}</h3>
-                  <div class="muted small">
-                    {{ suppliers_meta[supplier].type }}{% if suppliers_meta[supplier].local %} · Local{% endif %}
-                    · Delivery £{{ '%.2f'|format(suppliers_meta[supplier].delivery_gbp) }}
-                    · Lead {{ suppliers_meta[supplier].lead_days }} day(s)
-                  </div>
-                </div>
-              </div>
+  <div class="breadcrumb">
+    <a href="/">Home</a>
+    <span>›</span>
+    <span>Search</span>
+    {% if cat %}<span>›</span><span style="text-transform:capitalize;">{{ cat }}</span>{% endif %}
+  </div>
 
-              <div class="supplier-right">
-                <div class="muted small">Cheapest for this search</div>
-                <div class="price-strong">
-                  £{{ '%.2f'|format(offers[0].price_gbp) }}
-                  <span class="pill2 best">Cheapest</span>
-                </div>
-              </div>
-            </div>
+  <div class="search-head">
+    <div>
+      <h1 class="search-title">
+        {% if q %}Search: “{{ q }}”{% else %}Search{% endif %}
+        {% if cat %}<span class="muted">• {{ cat }}</span>{% endif %}
+      </h1>
+      <div class="muted small">{{ results_total }} results</div>
+    </div>
 
-            <div class="muted small" style="margin-top:8px;">{{ suppliers_meta[supplier].copy }}</div>
+    <form method="get" action="/search" class="sortbar">
+      <input type="hidden" name="q" value="{{ q }}">
+      <input type="hidden" name="cat" value="{{ cat }}">
+      <input type="hidden" name="brand" value="{{ brand }}">
+      <input type="hidden" name="diameter" value="{{ diameter }}">
+      <input type="hidden" name="length" value="{{ length }}">
+      <label class="small muted">Sort</label>
+      <select class="field" name="sort" onchange="this.form.submit()">
+        <option value="relevance" {% if sort=='relevance' %}selected{% endif %}>Relevance</option>
+        <option value="price_asc" {% if sort=='price_asc' %}selected{% endif %}>Price (low → high)</option>
+        <option value="price_desc" {% if sort=='price_desc' %}selected{% endif %}>Price (high → low)</option>
+        <option value="alpha" {% if sort=='alpha' %}selected{% endif %}>A → Z</option>
+      </select>
+    </form>
+  </div>
 
-            <div class="offers">
-              {% for o in offers %}
-                <div class="offer-row">
-                  <div class="offer-left">
-                    <img class="thumb" src="/img/{{ o.canonical }}" alt="" onerror="this.style.display='none'">
-                    <div>
-                      <div class="item-title">{{ label_for(o.canonical) }}</div>
-                      <div class="muted small">{{ o.title }}</div>
-                    </div>
-                  </div>
+  <div class="search-layout">
 
-                  <div class="offer-mid muted small">
-                    {{ o.unit }}
-                  </div>
+    <!-- Filters (Toolstation-style left rail) -->
+    <aside class="filters">
+      <div class="filter-card">
+        <div class="filter-title">Filters</div>
 
-                  <div class="offer-price">
-                    £{{ '%.2f'|format(o.price_gbp) }}
-                  </div>
+        <form method="get" action="/search" class="filter-form">
+          <input type="hidden" name="q" value="{{ q }}">
+          <input type="hidden" name="cat" value="{{ cat }}">
+          <input type="hidden" name="sort" value="{{ sort }}">
 
-                  <div class="offer-add">
-                    <form method="post" action="/add" class="addform">
-                      <input type="hidden" name="canonical" value="{{ o.canonical }}" />
-                      <input type="hidden" name="return_to" value="/search?q={{ q | urlencode }}" />
-                      <input class="qty" type="number" name="qty" value="1" min="1" />
-                      <button type="submit">Add</button>
-                    </form>
-                  </div>
-                </div>
+          <div class="filter-block">
+            <div class="filter-label">Brand</div>
+            <select class="field" name="brand">
+              <option value="">All</option>
+              {% for b, n in facets.brands %}
+                <option value="{{ b }}" {% if brand==b %}selected{% endif %}>{{ b }} ({{ n }})</option>
               {% endfor %}
-            </div>
+            </select>
+          </div>
 
+          <div class="filter-block">
+            <div class="filter-label">Diameter (mm)</div>
+            <select class="field" name="diameter">
+              <option value="">All</option>
+              {% for d, n in facets.diameters %}
+                <option value="{{ d }}" {% if diameter==d %}selected{% endif %}>{{ d }} ({{ n }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="filter-block">
+            <div class="filter-label">Length (mm)</div>
+            <select class="field" name="length">
+              <option value="">All</option>
+              {% for l, n in facets.lengths %}
+                <option value="{{ l }}" {% if length==l %}selected{% endif %}>{{ l }} ({{ n }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <button class="btn btn-primary" type="submit" style="width:100%;">Apply</button>
+          <a class="btn" href="/search?q={{ q }}&cat={{ cat }}" style="width:100%; margin-top:8px; text-align:center;">Clear</a>
+        </form>
+
+        <div class="filter-note small muted">
+          Built for quoting — filters are “good enough” for demo. Next phase: spec-level matching & AI synonyms.
+        </div>
+      </div>
+    </aside>
+
+    <!-- Results grid -->
+    <main class="results">
+      <div class="grid">
+        {% for p in cards %}
+          <div class="product-card">
+            <a class="pc-img" href="/product/{{ p.id }}" aria-label="View {{ p.name }}"></a>
+
+            <div class="pc-body">
+              <div class="pc-title">
+                <a href="/product/{{ p.id }}">{{ p.name }}</a>
+              </div>
+
+              <div class="pc-meta">
+                <span class="badge">{{ p.category }}</span>
+                <span class="badge ghost">{{ p.best_label }}</span>
+              </div>
+
+              <div class="pc-price">
+                <div class="pc-from">Best price</div>
+                <div class="pc-amount">£{{ "%.2f"|format(p.best_price) }}</div>
+                <div class="pc-supplier">from <strong>{{ p.best_supplier }}</strong></div>
+              </div>
+
+              <div class="pc-actions">
+                <form method="post" action="/basket/add" class="pc-form">
+                  <input type="hidden" name="product_id" value="{{ p.id }}">
+                  <input type="hidden" name="next" value="/search?q={{ q }}&cat={{ cat }}&brand={{ brand }}&diameter={{ diameter }}&length={{ length }}&sort={{ sort }}">
+                  <input class="field qty" type="number" name="qty" value="1" min="1">
+                  <button class="btn btn-primary" type="submit">Add</button>
+                </form>
+                <a class="link" href="/product/{{ p.id }}">Compare all suppliers →</a>
+              </div>
+            </div>
           </div>
         {% endfor %}
-      </section>
-    {% endif %}
-  </main>
+      </div>
+
+      {% if results_total == 0 %}
+        <div class="card card-pad">
+          No results. Try a broader term like “screws”, “4x2” or “OSB”.
+        </div>
+      {% endif %}
+    </main>
+
+  </div>
+
+</div>
 </body>
 </html>
