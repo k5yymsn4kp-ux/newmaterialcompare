@@ -6,180 +6,264 @@
 </head>
 <body>
 
-<div style="display:flex; justify-content:space-between; align-items:center;">
-  <div>
-    <h1 style="margin:0;">Basket</h1>
-    <p style="margin:6px 0 0; color:#666;">Compare totals by supplier. Price-first.</p>
-  </div>
-  <div style="display:flex; gap:10px;">
-    <a href="/">← Back to search</a>
-    <form method="post" action="/basket/clear" style="margin:0;">
-      <button type="submit">Clear basket</button>
-    </form>
-  </div>
-</div>
-
-<div style="padding:10px; border:1px solid #ddd; margin: 12px 0; color:#555;">
-  <strong>Price basis:</strong>
-  <span style="margin-left:8px;"><strong>Online price</strong> = public website price.</span>
-  <span style="margin-left:8px;"><strong>My account</strong> = your trade account pricing (can vary by branch & terms).</span>
-</div>
-
-{% if not any_qty %}
-  <div style="padding:12px; border:1px solid #ddd; margin-top:12px;">
-    Basket is empty. Go back to search and add materials.
-  </div>
-{% else %}
-
-<form method="post" action="/basket/update">
-
-  <div style="display:flex; gap:16px; flex-wrap:wrap; margin: 10px 0 18px 0; padding: 10px; border: 1px solid #ddd;">
-    <div>
-      <strong>VAT:</strong>
-      <label style="margin-left:10px;">
-        <input type="radio" name="vat_mode" value="ex" {% if vat_mode=="ex" %}checked{% endif %}> Ex VAT
-      </label>
-      <label style="margin-left:10px;">
-        <input type="radio" name="vat_mode" value="inc" {% if vat_mode=="inc" %}checked{% endif %}> Inc VAT
-      </label>
-    </div>
-
-    <div>
-      <strong>Mode:</strong>
-      <label style="margin-left:10px;">
-        <input type="radio" name="purchase_mode" value="single" {% if purchase_mode=="single" %}checked{% endif %}> Single supplier
-      </label>
-      <label style="margin-left:10px;">
-        <input type="radio" name="purchase_mode" value="split" {% if purchase_mode=="split" %}checked{% endif %}> Split basket
-      </label>
-    </div>
-
-    <div style="margin-left:auto;">
-      <button type="submit">Update basket</button>
-    </div>
-  </div>
-
-  <h2>Basket items</h2>
-  <table>
-    <tr>
-      <th>Product</th>
-      <th>Qty</th>
-    </tr>
-    {% for row in items %}
-    <tr>
-      <td>{{ row.product.name }}</td>
-      <td>
-        <input type="number" name="qty_{{ row.product.id }}" value="{{ row.qty }}" min="0" style="width:90px;">
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
-
-</form>
-
-<hr style="margin: 25px 0;">
-
-<h2>Totals</h2>
-
-{% if purchase_mode == "split" %}
-  <div style="padding:12px; border:1px solid #ddd; margin: 15px 0; background:#f7fbff;">
-    <strong>Selected mode:</strong> Split basket (cheapest per item)<br>
-    <strong>Split total ({{ "Inc VAT" if vat_mode=="inc" else "Ex VAT" }}):</strong>
-    £{{ "%.2f"|format(split_total_mode) }}
-    {% if saving_split_vs_best_single is not none %}
-      {% if saving_split_vs_best_single > 0 %}
-        <span style="margin-left:10px;">(saves £{{ "%.2f"|format(saving_split_vs_best_single) }} vs best single supplier)</span>
-      {% elif saving_split_vs_best_single < 0 %}
-        <span style="margin-left:10px;">(costs £{{ "%.2f"|format(-saving_split_vs_best_single) }} more than best single supplier)</span>
-      {% endif %}
-    {% endif %}
-  </div>
-{% else %}
-  <div style="padding:12px; border:1px solid #ddd; margin: 15px 0; background:#f7fbff;">
-    <strong>Selected mode:</strong> Single supplier<br>
-    <strong>Best single supplier ({{ "Inc VAT" if vat_mode=="inc" else "Ex VAT" }}):</strong>
-    {{ best_single_supplier }} — £{{ "%.2f"|format(best_single_total_mode) }}
-    <span style="margin-left:10px; color:#666;">({{ supplier_price_type.get(best_single_supplier, "Online") }})</span>
-    {% if saving_split_vs_best_single is not none and saving_split_vs_best_single > 0 %}
-      <span style="margin-left:10px;">(you could save £{{ "%.2f"|format(saving_split_vs_best_single) }} by splitting)</span>
-    {% endif %}
-  </div>
-{% endif %}
-
-<h3>Single supplier totals</h3>
-<table>
-  <tr>
-    <th>Supplier</th>
-    <th>Price basis</th>
-    <th>Total Ex VAT</th>
-    <th>Total Inc VAT</th>
-  </tr>
-  {% set sorted_single = totals_mode_single|dictsort(by='value') %}
-  {% for supplier, _ in sorted_single %}
-  <tr {% if supplier == best_single_supplier %}style="background:#eaffea;font-weight:bold;"{% endif %}>
-    <td>{{ supplier }}</td>
-    <td style="color:#666;">{{ supplier_price_type.get(supplier, "Online") }}</td>
-    <td>£{{ "%.2f"|format(totals_ex_single[supplier]) }}</td>
-    <td>£{{ "%.2f"|format(totals_inc_single[supplier]) }}</td>
-  </tr>
-  {% endfor %}
-</table>
-
-<h3 style="margin-top:22px;">Split basket total</h3>
-<table>
-  <tr><th>Split total Ex VAT</th><th>Split total Inc VAT</th></tr>
-  <tr>
-    <td>£{{ "%.2f"|format(split_total_ex) }}</td>
-    <td>£{{ "%.2f"|format(split_total_inc) }}</td>
-  </tr>
-</table>
-
-<div style="margin-top:14px; padding:12px; border:1px solid #ddd;">
-  <strong>Split basket picks:</strong>
-  <ul style="margin:10px 0 0 18px;">
-    {% for line in split_picks %}
-      <li>{{ line.qty }} × {{ line.name }} → <strong>{{ line.supplier }}</strong> ({{ line.label }}) — £{{ "%.2f"|format(line.unit_ex) }} ex VAT/unit</li>
-    {% endfor %}
-  </ul>
-</div>
-
-<hr style="margin: 25px 0;">
-
-<h2>Project folders</h2>
-
-<form method="post" action="/jobs/save" style="border:1px solid #ddd; padding:12px;">
-  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-    <label><strong>Job name:</strong></label>
-    <input type="text" name="job_name" placeholder="e.g., Smith extension" style="width:320px; padding:6px;">
-    <button type="submit">Save job</button>
-  </div>
-</form>
-
-{% if jobs and jobs|length > 0 %}
-  <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
-    {% for jid, job in jobs %}
-      <div style="border:1px solid #eee; padding:10px;">
-        <div style="font-weight:bold;">{{ job.name }}</div>
-        <div style="font-size:12px; color:#666; margin-top:2px;">
-          Mode: {{ "Single" if job.purchase_mode=="single" else "Split" }} · VAT: {{ "Ex" if job.vat_mode=="ex" else "Inc" }}
-        </div>
-        <div style="margin-top:8px; display:flex; gap:12px; align-items:center;">
-          <a href="/jobs/load?job_id={{ jid }}">Load</a>
-          <form method="post" action="/jobs/delete" style="margin:0;">
-            <input type="hidden" name="job_id" value="{{ jid }}">
-            <button type="submit" style="padding:4px 8px;">Delete</button>
-          </form>
-        </div>
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-badge"></div>
+      <div>
+        Material Compare
+        <small>Basket totals (price-first)</small>
       </div>
-    {% endfor %}
+    </div>
+    <div class="nav-actions">
+      <a class="pill" href="/">← Search</a>
+      <form method="post" action="/basket/clear" style="margin:0;">
+        <button class="btn btn-danger" type="submit">Clear basket</button>
+      </form>
+    </div>
   </div>
-{% else %}
-  <div style="padding:10px; border:1px dashed #ddd; color:#666; margin-top:12px;">
-    No saved jobs yet.
+</div>
+
+<div class="container">
+
+  <div class="notice">
+    <strong>Price basis:</strong>
+    <span style="margin-left:8px;"><span class="badge badge-online">Online price</span></span>
+    <span style="margin-left:8px;"><span class="badge badge-account">My account</span></span>
+    <span class="small" style="margin-left:10px;">(My account varies by branch/terms — demo labels)</span>
   </div>
-{% endif %}
 
-{% endif %}
+  <div style="height:14px;"></div>
 
+  {% if not any_qty %}
+    <div class="card card-pad">
+      Basket is empty. Go back to search and add materials.
+    </div>
+  {% else %}
+
+  <div class="grid grid-2">
+
+    <!-- Left: Basket items ONLY -->
+    <div class="card">
+      <div class="kicker">
+        <strong>Basket items</strong>
+        <span>Change quantities, then update</span>
+      </div>
+
+      <div class="card-pad">
+
+        <form method="post" action="/basket/update">
+
+          <table class="table">
+            <tr>
+              <th>Product</th>
+              <th style="width:140px;">Qty</th>
+            </tr>
+            {% for row in items %}
+            <tr>
+              <td>
+                <div style="font-weight:900;">{{ row.product.name }}</div>
+                <div class="small">Set qty to 0 to remove</div>
+              </td>
+              <td>
+                <input class="field" type="number" name="qty_{{ row.product.id }}" value="{{ row.qty }}" min="0">
+              </td>
+            </tr>
+            {% endfor %}
+          </table>
+
+          <div style="display:flex; justify-content:flex-end; margin-top:12px;">
+            <!-- keep current settings in the form (so update doesn't reset) -->
+            <input type="hidden" name="vat_mode" value="{{ vat_mode }}">
+            <input type="hidden" name="purchase_mode" value="{{ purchase_mode }}">
+            <button class="btn btn-primary" type="submit">Update basket</button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+
+    <!-- Right: Totals + controls (better placement) -->
+    <div class="card total-card">
+      <div class="kicker">
+        <strong>Compare outcomes</strong>
+        <span>Choose VAT + mode</span>
+      </div>
+
+      <div class="card-pad">
+
+        <!-- VAT toggle (belongs here) -->
+        <form method="post" action="/basket/update" style="margin:0;">
+          <div class="small" style="margin-bottom:8px; font-weight:900; color:#334155;">VAT</div>
+          <div class="radio-row">
+            <label class="radio">
+              <input type="radio" name="vat_mode" value="ex" {% if vat_mode=="ex" %}checked{% endif %}>
+              Ex VAT
+            </label>
+            <label class="radio">
+              <input type="radio" name="vat_mode" value="inc" {% if vat_mode=="inc" %}checked{% endif %}>
+              Inc VAT
+            </label>
+          </div>
+
+          <!-- carry quantities so changing VAT doesn't lose basket -->
+          {% for row in items %}
+            <input type="hidden" name="qty_{{ row.product.id }}" value="{{ row.qty }}">
+          {% endfor %}
+          <input type="hidden" name="purchase_mode" value="{{ purchase_mode }}">
+
+          <div style="margin-top:10px;">
+            <button class="btn" type="submit">Apply VAT</button>
+          </div>
+        </form>
+
+        <div class="divider"></div>
+
+        <!-- Mode comparison cards stacked -->
+        <div class="small" style="margin-bottom:8px; font-weight:900; color:#334155;">Mode</div>
+
+        <!-- SINGLE -->
+        <form method="post" action="/basket/update" style="margin:0;">
+          {% for row in items %}
+            <input type="hidden" name="qty_{{ row.product.id }}" value="{{ row.qty }}">
+          {% endfor %}
+          <input type="hidden" name="vat_mode" value="{{ vat_mode }}">
+          <input type="hidden" name="purchase_mode" value="single">
+
+          <div class="notice" style="border-color: rgba(15,23,42,.12); background:#fff;">
+            <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
+              <div>
+                <div style="font-weight:900;">Single supplier</div>
+                <div class="small">Best single merchant total (simple ordering)</div>
+              </div>
+              <button class="btn {% if purchase_mode=='single' %}btn-primary{% endif %}" type="submit">
+                {% if purchase_mode=='single' %}Selected{% else %}Select{% endif %}
+              </button>
+            </div>
+
+            <div style="margin-top:10px; font-size:20px; font-weight:900;">
+              £{{ "%.2f"|format(best_single_total_mode) }}
+              <span class="small" style="font-weight:700;">({{ "Inc VAT" if vat_mode=="inc" else "Ex VAT" }})</span>
+            </div>
+
+            <div class="small" style="margin-top:6px;">
+              Best: <strong>{{ best_single_supplier }}</strong>
+              {% if supplier_price_type.get(best_single_supplier, "Online") == "My account" %}
+                <span class="badge badge-account" style="margin-left:8px;">My account</span>
+              {% else %}
+                <span class="badge badge-online" style="margin-left:8px;">Online price</span>
+              {% endif %}
+            </div>
+          </div>
+        </form>
+
+        <div style="height:10px;"></div>
+
+        <!-- SPLIT -->
+        <form method="post" action="/basket/update" style="margin:0;">
+          {% for row in items %}
+            <input type="hidden" name="qty_{{ row.product.id }}" value="{{ row.qty }}">
+          {% endfor %}
+          <input type="hidden" name="vat_mode" value="{{ vat_mode }}">
+          <input type="hidden" name="purchase_mode" value="split">
+
+          <div class="notice" style="border-color: rgba(37,99,235,.25); background: rgba(37,99,235,.06);">
+            <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
+              <div>
+                <div style="font-weight:900;">Split basket</div>
+                <div class="small">Cheapest-per-line (real builder behaviour)</div>
+              </div>
+              <button class="btn {% if purchase_mode=='split' %}btn-primary{% endif %}" type="submit">
+                {% if purchase_mode=='split' %}Selected{% else %}Select{% endif %}
+              </button>
+            </div>
+
+            <div style="margin-top:10px; font-size:20px; font-weight:900;">
+              £{{ "%.2f"|format(split_total_mode) }}
+              <span class="small" style="font-weight:700;">({{ "Inc VAT" if vat_mode=="inc" else "Ex VAT" }})</span>
+            </div>
+
+            <div class="small" style="margin-top:6px;">
+              {% if mode_saving > 0 %}
+                Saves <strong>£{{ "%.2f"|format(mode_saving) }}</strong> vs best single supplier
+              {% elif mode_saving < 0 %}
+                Costs <strong>£{{ "%.2f"|format(-mode_saving) }}</strong> more than best single supplier
+              {% else %}
+                No difference vs best single supplier
+              {% endif %}
+            </div>
+          </div>
+        </form>
+
+        <div class="divider"></div>
+
+        <h2>Single supplier totals</h2>
+        <table class="table">
+          <tr>
+            <th>Supplier</th>
+            <th>Basis</th>
+            <th>Total (Ex)</th>
+            <th>Total (Inc)</th>
+          </tr>
+          {% set sorted_single = totals_mode_single|dictsort(by='value') %}
+          {% for supplier, _ in sorted_single %}
+          <tr {% if supplier == best_single_supplier %}class="highlight"{% endif %}>
+            <td style="font-weight:900;">{{ supplier }}</td>
+            <td>
+              {% if supplier_price_type.get(supplier, "Online") == "My account" %}
+                <span class="badge badge-account">My account</span>
+              {% else %}
+                <span class="badge badge-online">Online price</span>
+              {% endif %}
+            </td>
+            <td>£{{ "%.2f"|format(totals_ex_single[supplier]) }}</td>
+            <td>£{{ "%.2f"|format(totals_inc_single[supplier]) }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+
+        <div class="divider"></div>
+
+        <h2>Project folders</h2>
+        <form method="post" action="/jobs/save" class="row" style="margin:0;">
+          <div class="grow">
+            <input class="field" type="text" name="job_name" placeholder="e.g., Smith extension">
+          </div>
+          <button class="btn btn-primary" type="submit">Save</button>
+        </form>
+
+        {% if jobs and jobs|length > 0 %}
+          <div style="margin-top:12px; display:flex; flex-direction:column; gap:10px;">
+            {% for jid, job in jobs %}
+              <div class="notice">
+                <div style="display:flex; justify-content:space-between; gap:12px; align-items:center;">
+                  <div>
+                    <div style="font-weight:900;">{{ job.name }}</div>
+                    <div class="small">Mode: {{ "Single" if job.purchase_mode=="single" else "Split" }} · VAT: {{ "Ex" if job.vat_mode=="ex" else "Inc" }}</div>
+                  </div>
+                  <div style="display:flex; gap:10px; align-items:center;">
+                    <a class="btn" href="/jobs/load?job_id={{ jid }}">Load</a>
+                    <form method="post" action="/jobs/delete" style="margin:0;">
+                      <input type="hidden" name="job_id" value="{{ jid }}">
+                      <button class="btn btn-danger" type="submit">Delete</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="small" style="margin-top:10px;">No saved jobs yet.</div>
+        {% endif %}
+
+      </div>
+    </div>
+
+  </div>
+
+  {% endif %}
+
+</div>
 </body>
 </html>
