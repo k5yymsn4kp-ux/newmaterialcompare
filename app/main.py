@@ -28,17 +28,16 @@ SUPPLIER_PRICE_TYPE = {
 def make_prices(category: str, base: float, rng: random.Random):
     """
     Demo realism:
-    - Merchants (MKM/Jewson/Huws Gray) cheaper on timber/sheet/insulation/plaster
+    - Merchants (MKM/Jewson/Huws Gray) cheaper on timber/sheet/insulation/plaster/aggregates
     - Toolstation/Screwfix cheaper on fixings/tools/consumables
     """
-    # Baselines (multipliers)
     if category in ("timber", "sheet", "insulation", "drylining", "aggregates"):
         ts = base * rng.uniform(1.06, 1.18)
         sf = base * rng.uniform(1.08, 1.22)
         mkm = base * rng.uniform(0.92, 1.02)
         jew = base * rng.uniform(0.94, 1.05)
         huw = base * rng.uniform(0.90, 1.01)
-    else:  # fixings/tools/consumables
+    else:
         ts = base * rng.uniform(0.92, 1.03)
         sf = base * rng.uniform(0.90, 1.02)
         mkm = base * rng.uniform(1.05, 1.20)
@@ -56,11 +55,9 @@ def make_prices(category: str, base: float, rng: random.Random):
 
 def generate_demo_products():
     rng = random.Random(42)
-
     catalogue = []
     pid = 1
 
-    # Anchor “hero” items (so search demos well)
     anchors = [
         ("timber", "CLS Timber 4x2 2.4m", 5.10),
         ("timber", "CLS Timber 3x2 2.4m", 3.95),
@@ -82,7 +79,6 @@ def generate_demo_products():
         })
         pid += 1
 
-    # Build large catalogue (feels like thousands)
     specs = {
         "timber": [
             ("C16 CLS 3x2", [2.4, 3.0, 3.6, 4.8], 3.70),
@@ -126,15 +122,12 @@ def generate_demo_products():
         ]
     }
 
-    # Generate ~600 products (good enough for demo, feels big)
-    # If you want more later, we can set target to 1500+.
+    # ~650 items for demo responsiveness
     for cat, rows in specs.items():
-        for row in rows:
-            name_base, variants, base_price = row
+        for name_base, variants, base_price in rows:
             for v in variants:
                 for pack in [1, 2, 5, 10]:
-                    # Keep naming realistic
-                    if cat in ("timber",):
+                    if cat == "timber":
                         if isinstance(v, (int, float)):
                             name = f"{name_base} {v}m"
                         else:
@@ -161,7 +154,6 @@ def generate_demo_products():
                     })
                     pid += 1
 
-                # Stop if too big (keep it responsive for demo)
                 if len(catalogue) >= 650:
                     return catalogue
 
@@ -186,13 +178,11 @@ def category_list():
     cats = {}
     for p in PRODUCTS:
         cats[p["category"]] = cats.get(p["category"], 0) + 1
-    # nice order
     order = ["timber", "sheet", "insulation", "drylining", "fixings", "tools", "aggregates"]
     out = []
     for c in order:
         if c in cats:
             out.append((c, cats[c]))
-    # any others
     for c, n in sorted(cats.items()):
         if c not in order:
             out.append((c, n))
@@ -203,10 +193,8 @@ def search_products(q: str, cat: str = ""):
     cat = (cat or "").strip().lower()
 
     results = PRODUCTS
-
     if cat:
         results = [p for p in results if p["category"] == cat]
-
     if q:
         results = [p for p in results if q in p["name"].lower()]
 
@@ -232,9 +220,10 @@ def pick_split_supplier(product):
         best_merchant = min(merchants, key=lambda s: prices[s])
         if prices[best_merchant] <= abs_price * 1.03:
             return best_merchant
+
     return absolute_cheapest
 
-def calculate_totals(vat_mode: str, purchase_mode: str):
+def calculate_totals(vat_mode: str):
     items = basket_items()
     any_qty = len(items) > 0
 
@@ -272,9 +261,9 @@ def calculate_totals(vat_mode: str, purchase_mode: str):
         best_single_supplier = min(SUPPLIERS, key=lambda s: totals_mode_single[s])
         best_single_total_mode = totals_mode_single[best_single_supplier]
 
-    saving_split_vs_best_single = None
+    mode_saving = 0.0
     if any_qty and best_single_total_mode is not None:
-        saving_split_vs_best_single = best_single_total_mode - split_total_mode
+        mode_saving = best_single_total_mode - split_total_mode
 
     return {
         "any_qty": any_qty,
@@ -287,13 +276,16 @@ def calculate_totals(vat_mode: str, purchase_mode: str):
         "split_total_mode": split_total_mode,
         "best_single_supplier": best_single_supplier,
         "best_single_total_mode": best_single_total_mode,
-        "saving_split_vs_best_single": saving_split_vs_best_single,
+        "mode_saving": mode_saving,
         "split_picks": split_picks,
     }
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, q: str = "", cat: str = ""):
-    results = search_products(q, cat)
+    # Only show results when user searches or chooses a category
+    show_results = bool((q or "").strip() or (cat or "").strip())
+
+    results = search_products(q, cat) if show_results else []
     cats = category_list()
     basket_count = sum(int(v) for v in BASKET.values()) if BASKET else 0
 
@@ -303,6 +295,7 @@ def home(request: Request, q: str = "", cat: str = ""):
             "request": request,
             "q": q,
             "cat": cat,
+            "show_results": show_results,
             "results": results,
             "categories": cats,
             "basket_count": basket_count
@@ -348,11 +341,7 @@ async def basket_clear(request: Request):
 def basket_page(request: Request):
     vat_mode = SETTINGS["vat_mode"]
     purchase_mode = SETTINGS["purchase_mode"]
-    data = calculate_totals(vat_mode, purchase_mode)
-
-    best_single_total_mode = data.get("best_single_total_mode") or 0.0
-    split_total_mode = data.get("split_total_mode") or 0.0
-    mode_saving = (best_single_total_mode - split_total_mode) if data.get("any_qty") else 0.0
+    data = calculate_totals(vat_mode)
 
     return templates.TemplateResponse(
         "basket.html",
@@ -363,7 +352,6 @@ def basket_page(request: Request):
             "suppliers": SUPPLIERS,
             "supplier_price_type": SUPPLIER_PRICE_TYPE,
             "jobs": sorted(JOBS.items(), key=lambda x: x[1]["created"], reverse=True),
-            "mode_saving": mode_saving,
             **data
         }
     )
