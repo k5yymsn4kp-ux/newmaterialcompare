@@ -25,12 +25,11 @@
 
 <div class="container">
 
-  <!-- Hero -->
   <div class="card card-pad">
     <h1>Stop ringing round for prices.</h1>
     <p class="subtext">
       Search materials, add quantities, then compare totals across suppliers — including “my account” pricing labels.
-      Built for real quoting: extensions, refurb jobs, and day-to-day site ordering.
+      Built for real quoting: extensions, refurb jobs, and day-to-day ordering.
     </p>
 
     <div class="divider"></div>
@@ -45,49 +44,32 @@
         <a class="btn" href="/">Clear</a>
       {% endif %}
     </form>
+
+    <div style="margin-top:10px;" class="small">
+      Popular searches:
+      <a href="/?q=4x2" style="margin-left:8px;">4x2</a>
+      <a href="/?q=osb%2018" style="margin-left:8px;">OSB 18</a>
+      <a href="/?q=pir%2050" style="margin-left:8px;">PIR 50mm</a>
+      <a href="/?q=plasterboard" style="margin-left:8px;">Plasterboard</a>
+      <a href="/?q=screws" style="margin-left:8px;">Screws</a>
+    </div>
   </div>
 
   <div style="height:14px;"></div>
 
-  <!-- Offers strip (Toolstation-style) -->
   <div class="offers">
-    <a class="offer" href="/?cat=timber">
-      <div class="t">Timber Week</div>
-      <div class="d">CLS, C16/C24, joists — compare merchant totals fast.</div>
-      <div class="cta"><span class="tag">Browse</span><span>→</span></div>
-    </a>
-    <a class="offer" href="/?cat=sheet">
-      <div class="t">Sheet Materials</div>
-      <div class="d">OSB, MDF, ply, T&G flooring — price-first totals.</div>
-      <div class="cta"><span class="tag">Browse</span><span>→</span></div>
-    </a>
-    <a class="offer" href="/?cat=insulation">
-      <div class="t">Insulation</div>
-      <div class="d">PIR, mineral wool, acoustic slabs — compare by job.</div>
-      <div class="cta"><span class="tag">Browse</span><span>→</span></div>
-    </a>
-    <a class="offer" href="/?cat=drylining">
-      <div class="t">Drylining</div>
-      <div class="d">Boards, stud, track — build a quote basket in minutes.</div>
-      <div class="cta"><span class="tag">Browse</span><span>→</span></div>
-    </a>
-    <a class="offer" href="/?cat=fixings">
-      <div class="t">Fixings & Screws</div>
-      <div class="d">Where Toolstation/Screwfix usually win — prove it.</div>
-      <div class="cta"><span class="tag">Browse</span><span>→</span></div>
-    </a>
-    <a class="offer" href="/?cat=tools">
-      <div class="t">Tools & Consumables</div>
-      <div class="d">The quick add-ons that blow quotes if you forget them.</div>
-      <div class="cta"><span class="tag">Browse</span><span>→</span></div>
-    </a>
+    <a class="offer" href="/?cat=timber"><div class="t">Timber Week</div><div class="d">CLS, C16/C24, joists — merchant totals fast.</div><div class="cta"><span class="tag">Browse</span><span>→</span></div></a>
+    <a class="offer" href="/?cat=sheet"><div class="t">Sheet Materials</div><div class="d">OSB, MDF, ply, flooring — price-first totals.</div><div class="cta"><span class="tag">Browse</span><span>→</span></div></a>
+    <a class="offer" href="/?cat=insulation"><div class="t">Insulation</div><div class="d">PIR, wool, acoustic — build baskets quickly.</div><div class="cta"><span class="tag">Browse</span><span>→</span></div></a>
+    <a class="offer" href="/?cat=drylining"><div class="t">Drylining</div><div class="d">Boards, track, stud — quote in minutes.</div><div class="cta"><span class="tag">Browse</span><span>→</span></div></a>
+    <a class="offer" href="/?cat=fixings"><div class="t">Fixings</div><div class="d">Where TS/SF often win — prove it.</div><div class="cta"><span class="tag">Browse</span><span>→</span></div></a>
+    <a class="offer" href="/?cat=tools"><div class="t">Tools</div><div class="d">The add-ons that blow quotes if missed.</div><div class="cta"><span class="tag">Browse</span><span>→</span></div></a>
   </div>
 
   <div style="height:14px;"></div>
 
   <div class="home-grid">
 
-    <!-- Categories -->
     <div class="card card-pad">
       <h2>Categories</h2>
       <div class="cat">
@@ -95,7 +77,7 @@
           <span>All materials</span><span class="count">{{ categories|sum(attribute=1) }}</span>
         </a>
         {% for c, n in categories %}
-          <a href="/?cat={{ c }}{% if q %}&q={{ q }}{% endif %}" class="{% if cat==c %}active{% endif %}">
+          <a href="/?cat={{ c }}" class="{% if cat==c %}active{% endif %}">
             <span style="text-transform:capitalize;">{{ c }}</span><span class="count">{{ n }}</span>
           </a>
         {% endfor %}
@@ -103,59 +85,60 @@
 
       <div class="divider"></div>
 
-      <h3>Why builders use this</h3>
-      <ul class="small" style="margin:0 0 0 18px; line-height:1.6;">
-        <li>Quote faster without ringing round for updated prices.</li>
-        <li>Compare true basket totals, not just single line items.</li>
-        <li>See “single supplier vs split basket” savings instantly.</li>
-        <li>Save baskets into project folders and re-price in seconds.</li>
+      <h3>Built for builders</h3>
+      <ul class="small" style="margin:0 0 0 18px; line-height:1.7;">
+        <li>Quote faster without calling round.</li>
+        <li>Compare true basket totals, not just line items.</li>
+        <li>See single supplier vs split basket savings instantly.</li>
+        <li>Save baskets into project folders for re-pricing.</li>
       </ul>
     </div>
 
-    <!-- Results -->
     <div class="card">
       <div class="kicker">
         <strong>
-          Results{% if cat %} · <span style="text-transform:capitalize;">{{ cat }}</span>{% endif %}
-          {% if q %} · “{{ q }}”{% endif %}
+          {% if show_results %}
+            Results{% if cat %} · <span style="text-transform:capitalize;">{{ cat }}</span>{% endif %}
+            {% if q %} · “{{ q }}”{% endif %}
+          {% else %}
+            Start a quote
+          {% endif %}
         </strong>
-        <span>Showing up to 25 (demo catalogue: {{ categories|sum(attribute=1) }})</span>
+        <span>{% if show_results %}Showing up to 25{% else %}Search or pick a category{% endif %}</span>
       </div>
 
-      <table class="table">
-        <tr>
-          <th style="width:60%;">Product</th>
-          <th style="width:22%;">Qty</th>
-          <th style="width:18%;">Add</th>
-        </tr>
-
-        {% for p in results %}
-        <tr>
-          <td>
-            <div style="font-weight:900;">{{ p.name }}</div>
-            <div class="small" style="text-transform:capitalize;">{{ p.category }}</div>
-          </td>
-
-          <td>
-            <form method="post" action="/basket/add" style="margin:0; display:flex; gap:10px; align-items:center;">
-              <input type="hidden" name="product_id" value="{{ p.id }}">
-              <input class="field" style="max-width:130px;" type="number" name="qty" value="1" min="1">
-          </td>
-
-          <td>
-              <button class="btn btn-primary" type="submit">Add</button>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </table>
-
-      <div class="card-pad">
-        <div class="notice">
-          <strong>How it works:</strong>
-          Search → add items → compare totals in the basket → choose single vs split → save as a project folder.
+      {% if show_results %}
+        <table class="table">
+          <tr>
+            <th style="width:60%;">Product</th>
+            <th style="width:22%;">Qty</th>
+            <th style="width:18%;">Add</th>
+          </tr>
+          {% for p in results %}
+          <tr>
+            <td>
+              <div style="font-weight:900;">{{ p.name }}</div>
+              <div class="small" style="text-transform:capitalize;">{{ p.category }}</div>
+            </td>
+            <td>
+              <form method="post" action="/basket/add" style="margin:0; display:flex; gap:10px; align-items:center;">
+                <input type="hidden" name="product_id" value="{{ p.id }}">
+                <input class="field" style="max-width:130px;" type="number" name="qty" value="1" min="1">
+            </td>
+            <td>
+                <button class="btn btn-primary" type="submit">Add</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </table>
+      {% else %}
+        <div class="card-pad">
+          <div class="notice">
+            <strong>How it works:</strong> Search → add items → compare totals in the basket → choose single vs split → save as a project folder.
+          </div>
         </div>
-      </div>
+      {% endif %}
     </div>
 
   </div>

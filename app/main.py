@@ -23,13 +23,13 @@ SUPPLIER_PRICE_TYPE = {
 }
 
 # -------------------------
-# DEMO CATALOGUE (hundreds of items)
+# DEMO CATALOGUE (hundreds)
 # -------------------------
 def make_prices(category: str, base: float, rng: random.Random):
     """
     Demo realism:
-    - Merchants (MKM/Jewson/Huws Gray) cheaper on timber/sheet/insulation/plaster/aggregates
-    - Toolstation/Screwfix cheaper on fixings/tools/consumables
+    - Merchants (MKM/Jewson/Huws Gray) cheaper on timber/sheet/insulation/drylining/aggregates
+    - Toolstation/Screwfix cheaper on fixings/tools
     """
     if category in ("timber", "sheet", "insulation", "drylining", "aggregates"):
         ts = base * rng.uniform(1.06, 1.18)
@@ -71,12 +71,7 @@ def generate_demo_products():
         ("aggregates", "Building Sand Bulk Bag", 52.00),
     ]
     for cat, name, base in anchors:
-        catalogue.append({
-            "id": pid,
-            "category": cat,
-            "name": name,
-            "prices": make_prices(cat, base, rng)
-        })
+        catalogue.append({"id": pid, "category": cat, "name": name, "prices": make_prices(cat, base, rng)})
         pid += 1
 
     specs = {
@@ -119,26 +114,20 @@ def generate_demo_products():
             ("Ballast Bulk Bag", [1], 52.00),
             ("Type 1 MOT Bulk Bag", [1], 54.00),
             ("Cement 25kg", [1], 6.80),
-        ]
+        ],
     }
 
-    # ~650 items for demo responsiveness
+    # ~650 items total (feels like thousands in demo)
     for cat, rows in specs.items():
         for name_base, variants, base_price in rows:
             for v in variants:
                 for pack in [1, 2, 5, 10]:
                     if cat == "timber":
-                        if isinstance(v, (int, float)):
-                            name = f"{name_base} {v}m"
-                        else:
-                            name = f"{name_base} {v}"
-                        base = base_price * (v if isinstance(v, (int, float)) else 1.0) / 2.4
+                        name = f"{name_base} {v}m"
+                        base = base_price * (v / 2.4)
                     elif cat in ("sheet", "insulation", "drylining"):
-                        if isinstance(v, (int, float)):
-                            name = f"{name_base} {v}mm 2440x1220"
-                        else:
-                            name = f"{name_base} {v}"
-                        base = base_price * (v / 12 if isinstance(v, (int, float)) else 1.0)
+                        name = f"{name_base} {v}mm 2440x1220"
+                        base = base_price * (v / 12)
                     elif cat in ("fixings", "tools"):
                         name = f"{name_base} {v} (pack {pack})"
                         base = base_price * (0.85 + (pack * 0.07))
@@ -146,17 +135,11 @@ def generate_demo_products():
                         name = f"{name_base}"
                         base = base_price * (0.95 + (pack * 0.03))
 
-                    catalogue.append({
-                        "id": pid,
-                        "category": cat,
-                        "name": name,
-                        "prices": make_prices(cat, max(1.25, base), rng)
-                    })
+                    catalogue.append({"id": pid, "category": cat, "name": name, "prices": make_prices(cat, max(1.25, base), rng)})
                     pid += 1
 
-                if len(catalogue) >= 650:
-                    return catalogue
-
+                    if len(catalogue) >= 650:
+                        return catalogue
     return catalogue
 
 PRODUCTS = generate_demo_products()
@@ -197,7 +180,6 @@ def search_products(q: str, cat: str = ""):
         results = [p for p in results if p["category"] == cat]
     if q:
         results = [p for p in results if q in p["name"].lower()]
-
     return results[:25]
 
 def basket_items():
@@ -209,6 +191,11 @@ def basket_items():
     return items
 
 def pick_split_supplier(product):
+    """
+    Builder realism:
+    - For timber/sheet/insulation/drylining/aggregates: prefer merchants if close to cheapest.
+    - For fixings/tools: Screwfix/Toolstation often win, let price decide.
+    """
     prices = {s: float(product["prices"][s]) for s in SUPPLIERS}
     absolute_cheapest = min(SUPPLIERS, key=lambda s: prices[s])
     abs_price = prices[absolute_cheapest]
@@ -220,7 +207,6 @@ def pick_split_supplier(product):
         best_merchant = min(merchants, key=lambda s: prices[s])
         if prices[best_merchant] <= abs_price * 1.03:
             return best_merchant
-
     return absolute_cheapest
 
 def calculate_totals(vat_mode: str):
@@ -229,25 +215,15 @@ def calculate_totals(vat_mode: str):
 
     totals_ex_single = {s: 0.0 for s in SUPPLIERS}
     split_total_ex = 0.0
-    split_picks = []
 
     for row in items:
         p = row["product"]
         qty = row["qty"]
-
         for s in SUPPLIERS:
             totals_ex_single[s] += float(p["prices"][s]) * qty
 
         chosen = pick_split_supplier(p)
-        unit_ex = float(p["prices"][chosen])
-        split_total_ex += unit_ex * qty
-        split_picks.append({
-            "name": p["name"],
-            "qty": qty,
-            "supplier": chosen,
-            "unit_ex": unit_ex,
-            "label": SUPPLIER_PRICE_TYPE.get(chosen, "Online")
-        })
+        split_total_ex += float(p["prices"][chosen]) * qty
 
     totals_inc_single = {s: t * (1 + VAT_RATE) for s, t in totals_ex_single.items()}
     split_total_inc = split_total_ex * (1 + VAT_RATE)
@@ -270,19 +246,16 @@ def calculate_totals(vat_mode: str):
         "items": items,
         "totals_ex_single": totals_ex_single,
         "totals_inc_single": totals_inc_single,
-        "split_total_ex": split_total_ex,
-        "split_total_inc": split_total_inc,
         "totals_mode_single": totals_mode_single,
         "split_total_mode": split_total_mode,
         "best_single_supplier": best_single_supplier,
         "best_single_total_mode": best_single_total_mode,
         "mode_saving": mode_saving,
-        "split_picks": split_picks,
     }
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request, q: str = "", cat: str = ""):
-    # Only show results when user searches or chooses a category
+    # Key behaviour: only show results if user searches OR selects category
     show_results = bool((q or "").strip() or (cat or "").strip())
 
     results = search_products(q, cat) if show_results else []
@@ -298,7 +271,7 @@ def home(request: Request, q: str = "", cat: str = ""):
             "show_results": show_results,
             "results": results,
             "categories": cats,
-            "basket_count": basket_count
+            "basket_count": basket_count,
         }
     )
 
@@ -352,7 +325,7 @@ def basket_page(request: Request):
             "suppliers": SUPPLIERS,
             "supplier_price_type": SUPPLIER_PRICE_TYPE,
             "jobs": sorted(JOBS.items(), key=lambda x: x[1]["created"], reverse=True),
-            **data
+            **data,
         }
     )
 
