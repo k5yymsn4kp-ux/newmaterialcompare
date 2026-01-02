@@ -6,40 +6,160 @@
 </head>
 <body>
 
-<div style="display:flex; justify-content:space-between; align-items:center;">
-  <div>
-    <h1 style="margin:0;">Search materials</h1>
-    <p style="margin:6px 0 0; color:#666;">Find what you need, add to basket, then compare totals.</p>
-  </div>
-  <div>
-    <a href="/basket">Basket ({{ basket_count }}) →</a>
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-badge"></div>
+      <div>
+        Material Compare
+        <small>Price-first comparison for UK builders</small>
+      </div>
+    </div>
+    <div class="nav-actions">
+      <a class="pill" href="/basket">
+        Basket <span class="count">{{ basket_count }}</span>
+      </a>
+    </div>
   </div>
 </div>
 
-<form method="get" action="/" style="margin:16px 0;">
-  <input type="text" name="q" value="{{ q }}" placeholder="Search e.g. 4x2, OSB, MDF, ply..." style="width:420px; padding:8px;">
-  <button type="submit">Search</button>
-</form>
+<div class="container">
 
-<table>
-  <tr>
-    <th>Product</th>
-    <th>Action</th>
-  </tr>
+  <!-- Hero -->
+  <div class="card card-pad">
+    <h1>Stop ringing round for prices.</h1>
+    <p class="subtext">
+      Search materials, add quantities, then compare totals across suppliers — including “my account” pricing labels.
+      Built for real quoting: extensions, refurb jobs, and day-to-day site ordering.
+    </p>
 
-  {% for p in results %}
-  <tr>
-    <td>{{ p.name }}</td>
-    <td>
-      <form method="post" action="/basket/add" style="margin:0; display:flex; gap:8px; align-items:center;">
-        <input type="hidden" name="product_id" value="{{ p.id }}">
-        <input type="number" name="qty" value="1" min="1" style="width:70px;">
-        <button type="submit">Add</button>
-      </form>
-    </td>
-  </tr>
-  {% endfor %}
-</table>
+    <div class="divider"></div>
 
+    <form method="get" action="/" class="row" style="margin:0;">
+      <div class="grow">
+        <input class="field" type="text" name="q" value="{{ q }}" placeholder="Search e.g. 4x2, OSB 18, PIR 50mm, plasterboard...">
+      </div>
+      <input type="hidden" name="cat" value="{{ cat }}">
+      <button class="btn btn-primary" type="submit">Search</button>
+      {% if cat or q %}
+        <a class="btn" href="/">Clear</a>
+      {% endif %}
+    </form>
+  </div>
+
+  <div style="height:14px;"></div>
+
+  <!-- Offers strip (Toolstation-style) -->
+  <div class="offers">
+    <a class="offer" href="/?cat=timber">
+      <div class="t">Timber Week</div>
+      <div class="d">CLS, C16/C24, joists — compare merchant totals fast.</div>
+      <div class="cta"><span class="tag">Browse</span><span>→</span></div>
+    </a>
+    <a class="offer" href="/?cat=sheet">
+      <div class="t">Sheet Materials</div>
+      <div class="d">OSB, MDF, ply, T&G flooring — price-first totals.</div>
+      <div class="cta"><span class="tag">Browse</span><span>→</span></div>
+    </a>
+    <a class="offer" href="/?cat=insulation">
+      <div class="t">Insulation</div>
+      <div class="d">PIR, mineral wool, acoustic slabs — compare by job.</div>
+      <div class="cta"><span class="tag">Browse</span><span>→</span></div>
+    </a>
+    <a class="offer" href="/?cat=drylining">
+      <div class="t">Drylining</div>
+      <div class="d">Boards, stud, track — build a quote basket in minutes.</div>
+      <div class="cta"><span class="tag">Browse</span><span>→</span></div>
+    </a>
+    <a class="offer" href="/?cat=fixings">
+      <div class="t">Fixings & Screws</div>
+      <div class="d">Where Toolstation/Screwfix usually win — prove it.</div>
+      <div class="cta"><span class="tag">Browse</span><span>→</span></div>
+    </a>
+    <a class="offer" href="/?cat=tools">
+      <div class="t">Tools & Consumables</div>
+      <div class="d">The quick add-ons that blow quotes if you forget them.</div>
+      <div class="cta"><span class="tag">Browse</span><span>→</span></div>
+    </a>
+  </div>
+
+  <div style="height:14px;"></div>
+
+  <div class="home-grid">
+
+    <!-- Categories -->
+    <div class="card card-pad">
+      <h2>Categories</h2>
+      <div class="cat">
+        <a href="/" class="{% if not cat %}active{% endif %}">
+          <span>All materials</span><span class="count">{{ categories|sum(attribute=1) }}</span>
+        </a>
+        {% for c, n in categories %}
+          <a href="/?cat={{ c }}{% if q %}&q={{ q }}{% endif %}" class="{% if cat==c %}active{% endif %}">
+            <span style="text-transform:capitalize;">{{ c }}</span><span class="count">{{ n }}</span>
+          </a>
+        {% endfor %}
+      </div>
+
+      <div class="divider"></div>
+
+      <h3>Why builders use this</h3>
+      <ul class="small" style="margin:0 0 0 18px; line-height:1.6;">
+        <li>Quote faster without ringing round for updated prices.</li>
+        <li>Compare true basket totals, not just single line items.</li>
+        <li>See “single supplier vs split basket” savings instantly.</li>
+        <li>Save baskets into project folders and re-price in seconds.</li>
+      </ul>
+    </div>
+
+    <!-- Results -->
+    <div class="card">
+      <div class="kicker">
+        <strong>
+          Results{% if cat %} · <span style="text-transform:capitalize;">{{ cat }}</span>{% endif %}
+          {% if q %} · “{{ q }}”{% endif %}
+        </strong>
+        <span>Showing up to 25 (demo catalogue: {{ categories|sum(attribute=1) }})</span>
+      </div>
+
+      <table class="table">
+        <tr>
+          <th style="width:60%;">Product</th>
+          <th style="width:22%;">Qty</th>
+          <th style="width:18%;">Add</th>
+        </tr>
+
+        {% for p in results %}
+        <tr>
+          <td>
+            <div style="font-weight:900;">{{ p.name }}</div>
+            <div class="small" style="text-transform:capitalize;">{{ p.category }}</div>
+          </td>
+
+          <td>
+            <form method="post" action="/basket/add" style="margin:0; display:flex; gap:10px; align-items:center;">
+              <input type="hidden" name="product_id" value="{{ p.id }}">
+              <input class="field" style="max-width:130px;" type="number" name="qty" value="1" min="1">
+          </td>
+
+          <td>
+              <button class="btn btn-primary" type="submit">Add</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </table>
+
+      <div class="card-pad">
+        <div class="notice">
+          <strong>How it works:</strong>
+          Search → add items → compare totals in the basket → choose single vs split → save as a project folder.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
 </body>
 </html>
