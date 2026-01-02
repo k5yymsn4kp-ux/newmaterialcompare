@@ -6,17 +6,28 @@
 </head>
 <body>
 
-<div class="topbar">
+<!-- Top promo strip (Toolstation-style) -->
+<div class="promo-strip">
+  <div class="promo-inner">
+    <div class="promo-item"><span class="promo-dot"></span><strong>Price-first</strong><span>Compare basket totals</span></div>
+    <div class="promo-item"><span class="promo-dot"></span><strong>Trade-ready</strong><span>“My account” price labels</span></div>
+    <div class="promo-item"><span class="promo-dot"></span><strong>Fast quoting</strong><span>Build an extension basket quickly</span></div>
+    <div class="promo-item"><span class="promo-dot"></span><strong>Click & collect</strong><span>Delivery info stays quiet</span></div>
+  </div>
+</div>
+
+<div class="topbar topbar-tool">
   <div class="topbar-inner">
     <div class="brand">
-      <div class="brand-badge"></div>
+      <div class="brand-badge brand-badge-red"></div>
       <div>
         Material Compare
-        <small>Price-first comparison for UK builders</small>
+        <small>Built for UK builders • price-first comparisons</small>
       </div>
     </div>
+
     <div class="nav-actions">
-      <a class="pill" href="/basket">
+      <a class="pill pill-strong" href="/basket">
         Basket <span class="count">{{ basket_count }}</span>
       </a>
     </div>
@@ -25,51 +36,143 @@
 
 <div class="container">
 
-  <div class="card card-pad">
-    <h1>Stop ringing round for prices.</h1>
-    <p class="subtext">
-      Search materials, add quantities, then compare totals across suppliers — including “my account” pricing labels.
-      Built for real quoting: extensions, refurb jobs, and day-to-day ordering.
-    </p>
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-main">
+      <div class="hero-kicker">Quote faster. Stop ringing round.</div>
+      <h1 class="hero-title">Search materials → add quantities → compare totals.</h1>
+      <p class="hero-sub">
+        Built for real quoting: extensions, refurbs, snag lists and day-to-day ordering.
+        Delivery stays secondary — pricing is the main event.
+      </p>
 
-    <div class="divider"></div>
+      <form method="get" action="/" class="hero-search">
+        <input type="hidden" name="cat" value="{{ cat }}">
+        <input class="hero-field" type="text" name="q" value="{{ q }}" placeholder="Search e.g. 4x2, OSB 18, PIR 50mm, plasterboard, screws…">
+        <button class="hero-btn" type="submit">Search</button>
+        {% if cat or q %}
+          <a class="hero-btn ghost" href="/">Clear</a>
+        {% endif %}
+      </form>
 
-    <form method="get" action="/" class="row" style="margin:0;">
-      <div class="grow">
-        <input class="field" type="text" name="q" value="{{ q }}" placeholder="Search e.g. 4x2, OSB 18, PIR 50mm, plasterboard...">
+      <div class="chips">
+        <a class="chip" href="/?q=4x2">4x2</a>
+        <a class="chip" href="/?q=3x2">3x2</a>
+        <a class="chip" href="/?q=osb%2018">OSB 18</a>
+        <a class="chip" href="/?q=mdf%2018">MDF 18</a>
+        <a class="chip" href="/?q=pir%2050">PIR 50</a>
+        <a class="chip" href="/?q=plasterboard">Plasterboard</a>
+        <a class="chip" href="/?q=screws">Screws</a>
       </div>
-      <input type="hidden" name="cat" value="{{ cat }}">
-      <button class="btn btn-primary" type="submit">Search</button>
-      {% if cat or q %}
-        <a class="btn" href="/">Clear</a>
-      {% endif %}
-    </form>
+    </div>
 
-    <div style="margin-top:10px;" class="small">
-      Popular searches:
-      <a href="/?q=4x2" style="margin-left:8px;">4x2</a>
-      <a href="/?q=osb%2018" style="margin-left:8px;">OSB 18</a>
-      <a href="/?q=pir%2050" style="margin-left:8px;">PIR 50mm</a>
-      <a href="/?q=plasterboard" style="margin-left:8px;">Plasterboard</a>
-      <a href="/?q=screws" style="margin-left:8px;">Screws</a>
+    <!-- Right hero promos -->
+    <div class="hero-side">
+      <a class="hero-card" href="/?cat=timber">
+        <div class="hc-badge">FEATURED</div>
+        <div class="hc-title">Timber & carcassing</div>
+        <div class="hc-sub">CLS, joists, C16/C24 — see merchant totals.</div>
+        <div class="hc-cta">Browse →</div>
+      </a>
+
+      <a class="hero-card" href="/?cat=sheet">
+        <div class="hc-badge">HOT</div>
+        <div class="hc-title">Sheet materials</div>
+        <div class="hc-sub">OSB, ply, MDF, flooring — quote quickly.</div>
+        <div class="hc-cta">Browse →</div>
+      </a>
+
+      <a class="hero-card" href="/?cat=insulation">
+        <div class="hc-badge">NEW</div>
+        <div class="hc-title">Insulation</div>
+        <div class="hc-sub">PIR, wool, acoustic — split basket savings.</div>
+        <div class="hc-cta">Browse →</div>
+      </a>
     </div>
   </div>
 
-  <div style="height:14px;"></div>
-
-  <div class="offers">
-    <a class="offer" href="/?cat=timber"><div class="t">Timber Week</div><div class="d">CLS, C16/C24, joists — merchant totals fast.</div><div class="cta"><span class="tag">Browse</span><span>→</span></div></a>
-    <a class="offer" href="/?cat=sheet"><div class="t">Sheet Materials</div><div class="d">OSB, MDF, ply, flooring — price-first totals.</div><div class="cta"><span class="tag">Browse</span><span>→</span></div></a>
-    <a class="offer" href="/?cat=insulation"><div class="t">Insulation</div><div class="d">PIR, wool, acoustic — build baskets quickly.</div><div class="cta"><span class="tag">Browse</span><span>→</span></div></a>
-    <a class="offer" href="/?cat=drylining"><div class="t">Drylining</div><div class="d">Boards, track, stud — quote in minutes.</div><div class="cta"><span class="tag">Browse</span><span>→</span></div></a>
-    <a class="offer" href="/?cat=fixings"><div class="t">Fixings</div><div class="d">Where TS/SF often win — prove it.</div><div class="cta"><span class="tag">Browse</span><span>→</span></div></a>
-    <a class="offer" href="/?cat=tools"><div class="t">Tools</div><div class="d">The add-ons that blow quotes if missed.</div><div class="cta"><span class="tag">Browse</span><span>→</span></div></a>
+  <!-- Featured offers (Toolstation-style section) -->
+  <div class="section-head">
+    <h2>Featured offers</h2>
+    <a class="section-link" href="/?q=offers">View all →</a>
   </div>
 
-  <div style="height:14px;"></div>
+  <div class="deal-row">
+    <a class="deal" href="/?q=TurboGold%205x80">
+      <div class="deal-tag">SAVE</div>
+      <div class="deal-title">TurboGold Screws 5x80</div>
+      <div class="deal-sub">Box pricing • fast add to quote</div>
+      <div class="deal-price">
+        <span class="now">£10.99</span>
+        <span class="was">£12.99</span>
+      </div>
+      <div class="deal-cta">Compare →</div>
+    </a>
 
-  <div class="home-grid">
+    <a class="deal" href="/?q=18mm%20OSB">
+      <div class="deal-tag">DEAL</div>
+      <div class="deal-title">18mm OSB 2440x1220</div>
+      <div class="deal-sub">Trade board • big savings on totals</div>
+      <div class="deal-price">
+        <span class="now">£19.60</span>
+        <span class="was">£22.40</span>
+      </div>
+      <div class="deal-cta">Compare →</div>
+    </a>
 
+    <a class="deal" href="/?q=PIR%2050mm">
+      <div class="deal-tag">OFFER</div>
+      <div class="deal-title">PIR Insulation 50mm</div>
+      <div class="deal-sub">Best for larger baskets</div>
+      <div class="deal-price">
+        <span class="now">£28.00</span>
+        <span class="was">£31.50</span>
+      </div>
+      <div class="deal-cta">Compare →</div>
+    </a>
+
+    <a class="deal" href="/?q=Plasterboard%2012.5">
+      <div class="deal-tag">SAVE</div>
+      <div class="deal-title">Plasterboard 12.5mm</div>
+      <div class="deal-sub">Drylining essentials</div>
+      <div class="deal-price">
+        <span class="now">£9.80</span>
+        <span class="was">£11.10</span>
+      </div>
+      <div class="deal-cta">Compare →</div>
+    </a>
+
+    <a class="deal" href="/?q=Cement%2025kg">
+      <div class="deal-tag">DEAL</div>
+      <div class="deal-title">Cement 25kg</div>
+      <div class="deal-sub">Pricing made easy</div>
+      <div class="deal-price">
+        <span class="now">£6.80</span>
+        <span class="was">£7.50</span>
+      </div>
+      <div class="deal-cta">Compare →</div>
+    </a>
+  </div>
+
+  <!-- Categories grid -->
+  <div class="section-head" style="margin-top:18px;">
+    <h2>Shop by category</h2>
+    <span class="small muted">{{ categories|sum(attribute=1) }} demo products</span>
+  </div>
+
+  <div class="cat-grid">
+    <a class="cat-tile" href="/?cat=timber"><strong>Timber</strong><span>CLS, joists, carcassing</span></a>
+    <a class="cat-tile" href="/?cat=sheet"><strong>Sheet</strong><span>OSB, MDF, ply, flooring</span></a>
+    <a class="cat-tile" href="/?cat=insulation"><strong>Insulation</strong><span>PIR, wool, acoustic</span></a>
+    <a class="cat-tile" href="/?cat=drylining"><strong>Drylining</strong><span>Boards, studs, track</span></a>
+    <a class="cat-tile" href="/?cat=fixings"><strong>Fixings</strong><span>Screws, plugs, brackets</span></a>
+    <a class="cat-tile" href="/?cat=tools"><strong>Tools</strong><span>Consumables & essentials</span></a>
+    <a class="cat-tile" href="/?cat=aggregates"><strong>Aggregates</strong><span>Sand, ballast, cement</span></a>
+    <a class="cat-tile" href="/basket"><strong>My basket</strong><span>Compare totals now</span></a>
+  </div>
+
+  <!-- Results area (ONLY when show_results true) -->
+  <div class="home-grid" style="margin-top:18px;">
     <div class="card card-pad">
       <h2>Categories</h2>
       <div class="cat">
@@ -85,12 +188,12 @@
 
       <div class="divider"></div>
 
-      <h3>Built for builders</h3>
+      <h3>Why we’re different</h3>
       <ul class="small" style="margin:0 0 0 18px; line-height:1.7;">
-        <li>Quote faster without calling round.</li>
-        <li>Compare true basket totals, not just line items.</li>
-        <li>See single supplier vs split basket savings instantly.</li>
-        <li>Save baskets into project folders for re-pricing.</li>
+        <li>Price-first basket totals (not delivery-first).</li>
+        <li>Single supplier vs split basket — real savings.</li>
+        <li>Account pricing labels (“My account”) for trade reality.</li>
+        <li>Project folders so you can re-price a quote in seconds.</li>
       </ul>
     </div>
 
@@ -101,10 +204,10 @@
             Results{% if cat %} · <span style="text-transform:capitalize;">{{ cat }}</span>{% endif %}
             {% if q %} · “{{ q }}”{% endif %}
           {% else %}
-            Start a quote
+            Search results
           {% endif %}
         </strong>
-        <span>{% if show_results %}Showing up to 25{% else %}Search or pick a category{% endif %}</span>
+        <span>{% if show_results %}Showing up to 25{% else %}Search or pick a category above{% endif %}</span>
       </div>
 
       {% if show_results %}
@@ -135,12 +238,11 @@
       {% else %}
         <div class="card-pad">
           <div class="notice">
-            <strong>How it works:</strong> Search → add items → compare totals in the basket → choose single vs split → save as a project folder.
+            <strong>Tip:</strong> Click a category tile above (timber/sheet etc.) to start building a quote basket.
           </div>
         </div>
       {% endif %}
     </div>
-
   </div>
 
 </div>
