@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{{ cat_title }} • Material Compare</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="promo-strip">
+  <div class="promo-inner">
+    <div class="promo-item"><span class="promo-dot"></span><strong>Price-first</strong><span>Basket totals</span></div>
+    <div class="promo-item"><span class="promo-dot"></span><strong>Trade-ready</strong><span>“My account” labels</span></div>
+    <div class="promo-item"><span class="promo-dot"></span><strong>Fast quoting</strong><span>Extensions & refurbs</span></div>
+    <div class="promo-item"><span class="promo-dot"></span><strong>Click & collect</strong><span>Delivery stays quiet</span></div>
+  </div>
+</div>
+
+<div class="topbar topbar-tool">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-badge brand-badge-red"></div>
+      <div>
+        <a href="/" style="color:inherit; text-decoration:none;">Material Compare</a>
+        <small>Category browse</small>
+      </div>
+    </div>
+
+    <form class="top-search" method="get" action="/search">
+      <input type="hidden" name="cat" value="{{ cat }}">
+      <input class="top-search-field" name="q" value="{{ q }}" placeholder="Search within {{ cat_title }}…" />
+      <button class="top-search-btn" type="submit">Search</button>
+    </form>
+
+    <div class="nav-actions">
+      <a class="pill pill-strong" href="/basket">Basket <span class="count">{{ basket_count }}</span></a>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="breadcrumb">
+    <a href="/">Home</a>
+    <span>›</span>
+    <span style="text-transform:capitalize;">{{ cat_title }}</span>
+  </div>
+
+  <!-- Category hero (Toolstation-ish) -->
+  <div class="cat-hero">
+    <div class="cat-hero-left">
+      <h1 class="cat-title">{{ cat_title }}</h1>
+      <p class="cat-intro">
+        {{ cat_intro }}
+      </p>
+
+      <div class="cat-stats">
+        <div class="stat">
+          <div class="stat-k">Products</div>
+          <div class="stat-v">{{ results_total }}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-k">Builder focus</div>
+          <div class="stat-v">Price first</div>
+        </div>
+        <div class="stat">
+          <div class="stat-k">Compare</div>
+          <div class="stat-v">All suppliers</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cat-hero-right">
+      <div class="cat-promo-card">
+        <div class="cpc-title">Quick build a quote</div>
+        <div class="cpc-sub">Add quantities, then compare totals across suppliers.</div>
+        <a class="btn btn-primary" href="/basket" style="width:100%; text-align:center; margin-top:10px;">Go to basket</a>
+      </div>
+      <div class="cat-promo-card ghost">
+        <div class="cpc-title">Trade pricing labels</div>
+        <div class="cpc-sub">Shows whether a price is “Online” or “My account”.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="search-head" style="margin-top:14px;">
+    <div>
+      <div class="muted small">{{ results_total }} results</div>
+      {% if q %}<div class="small">Searching: <strong>“{{ q }}”</strong></div>{% endif %}
+    </div>
+
+    <form method="get" action="/category/{{ cat }}" class="sortbar">
+      <input type="hidden" name="q" value="{{ q }}">
+      <input type="hidden" name="brand" value="{{ brand }}">
+      <input type="hidden" name="diameter" value="{{ diameter }}">
+      <input type="hidden" name="length" value="{{ length }}">
+      <label class="small muted">Sort</label>
+      <select class="field" name="sort" onchange="this.form.submit()">
+        <option value="relevance" {% if sort=='relevance' %}selected{% endif %}>Relevance</option>
+        <option value="price_asc" {% if sort=='price_asc' %}selected{% endif %}>Price (low → high)</option>
+        <option value="price_desc" {% if sort=='price_desc' %}selected{% endif %}>Price (high → low)</option>
+        <option value="alpha" {% if sort=='alpha' %}selected{% endif %}>A → Z</option>
+      </select>
+    </form>
+  </div>
+
+  <div class="search-layout">
+
+    <!-- Filters -->
+    <aside class="filters">
+      <div class="filter-card">
+        <div class="filter-title">Filters</div>
+
+        <form method="get" action="/category/{{ cat }}" class="filter-form">
+          <input type="hidden" name="q" value="{{ q }}">
+          <input type="hidden" name="sort" value="{{ sort }}">
+
+          <div class="filter-block">
+            <div class="filter-label">Brand</div>
+            <select class="field" name="brand">
+              <option value="">All</option>
+              {% for b, n in facets.brands %}
+                <option value="{{ b }}" {% if brand==b %}selected{% endif %}>{{ b }} ({{ n }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="filter-block">
+            <div class="filter-label">Diameter (mm)</div>
+            <select class="field" name="diameter">
+              <option value="">All</option>
+              {% for d, n in facets.diameters %}
+                <option value="{{ d }}" {% if diameter==d %}selected{% endif %}>{{ d }} ({{ n }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="filter-block">
+            <div class="filter-label">Length (mm)</div>
+            <select class="field" name="length">
+              <option value="">All</option>
+              {% for l, n in facets.lengths %}
+                <option value="{{ l }}" {% if length==l %}selected{% endif %}>{{ l }} ({{ n }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <button class="btn btn-primary" type="submit" style="width:100%;">Apply</button>
+          <a class="btn" href="/category/{{ cat }}{% if q %}?q={{ q }}{% endif %}" style="width:100%; margin-top:8px; text-align:center;">Clear</a>
+        </form>
+
+        <div class="filter-note small muted">
+          Demo filters. Next phase: spec-level matching + AI synonyms.
+        </div>
+      </div>
+    </aside>
+
+    <!-- Results -->
+    <main class="results">
+      <div class="grid">
+        {% for p in cards %}
+          <div class="product-card">
+            <a class="pc-img" href="/product/{{ p.id }}" aria-label="View {{ p.name }}"></a>
+
+            <div class="pc-body">
+              <div class="pc-title">
+                <a href="/product/{{ p.id }}">{{ p.name }}</a>
+              </div>
+
+              <div class="pc-meta">
+                <span class="badge">{{ p.category }}</span>
+                <span class="badge ghost">{{ p.best_label }}</span>
+              </div>
+
+              <div class="pc-price">
+                <div class="pc-from">Cheapest</div>
+                <div class="pc-amount">£{{ "%.2f"|format(p.best_price) }}</div>
+                <div class="pc-supplier">from <strong>{{ p.best_supplier }}</strong></div>
+              </div>
+
+              <!-- Mini supplier comparison -->
+              <div class="mini-compare">
+                {% for r in p.mini_rows %}
+                  <div class="mini-row {% if r.is_best %}is-best{% elif r.is_second %}is-second{% endif %}">
+                    <span class="mini-s">{{ r.supplier }}</span>
+                    <span class="mini-l">{{ r.label }}</span>
+                    <span class="mini-p">£{{ "%.2f"|format(r.price) }}</span>
+                  </div>
+                {% endfor %}
+              </div>
+
+              <div class="pc-actions">
+                <form method="post" action="/basket/add" class="pc-form">
+                  <input type="hidden" name="product_id" value="{{ p.id }}">
+                  <input type="hidden" name="next" value="/category/{{ cat }}?q={{ q }}&brand={{ brand }}&diameter={{ diameter }}&length={{ length }}&sort={{ sort }}">
+                  <input class="field qty" type="number" name="qty" value="1" min="1">
+                  <button class="btn btn-primary" type="submit">Add</button>
+                </form>
+                <a class="link" href="/product/{{ p.id }}">View details →</a>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      {% if results_total == 0 %}
+        <div class="card card-pad">No results in this category.</div>
+      {% endif %}
+    </main>
+
+  </div>
+
+</div>
+</body>
+</html>

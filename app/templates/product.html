@@ -21,7 +21,7 @@
       <div class="brand-badge brand-badge-red"></div>
       <div>
         <a href="/" style="color:inherit; text-decoration:none;">Material Compare</a>
-        <small>Product comparison</small>
+        <small>Product</small>
       </div>
     </div>
 
@@ -40,20 +40,35 @@
 
   <div class="breadcrumb">
     <a href="/">Home</a> <span>›</span>
-    <a href="/search?cat={{ p.category }}">{{ p.category }}</a> <span>›</span>
+    <a href="/category/{{ p.category }}">{{ p.category }}</a> <span>›</span>
     <span>{{ p.name }}</span>
   </div>
 
-  <div class="product-layout">
-    <div class="product-media"></div>
+  <!-- PDP top (Toolstation-ish) -->
+  <div class="pdp-top">
+    <div class="pdp-gallery">
+      <div class="pdp-main-img"></div>
+      <div class="pdp-thumbs">
+        <div class="pdp-thumb"></div>
+        <div class="pdp-thumb"></div>
+        <div class="pdp-thumb"></div>
+        <div class="pdp-thumb"></div>
+      </div>
+    </div>
 
-    <div class="product-main">
-      <h1 class="product-title">{{ p.name }}</h1>
-      <div class="product-sub muted small">
-        Category: <strong style="text-transform:capitalize;">{{ p.category }}</strong>
+    <div class="pdp-buy">
+      <div class="pdp-meta-row">
+        <span class="badge">{{ p.category }}</span>
+        <span class="badge ghost">SKU {{ p.sku }}</span>
+        <span class="badge ghost">{{ p.brand }}</span>
       </div>
 
-      <div class="product-hero">
+      <h1 class="pdp-title">{{ p.name }}</h1>
+      <p class="muted" style="margin:6px 0 12px;">
+        Trade-style product page with proper description + specs. The difference: we compare suppliers and basket totals.
+      </p>
+
+      <div class="pdp-pricebox">
         <div>
           <div class="muted small">Best price</div>
           <div class="hero-price">£{{ "%.2f"|format(best_price) }}</div>
@@ -68,12 +83,8 @@
         </form>
       </div>
 
-      <div class="card card-pad">
-        <div class="section-head" style="margin:0 0 10px;">
-          <h2 style="margin:0;">Compare suppliers</h2>
-          <span class="small muted">Shows Online vs My account labels</span>
-        </div>
-
+      <div class="card card-pad" style="margin-top:12px;">
+        <div style="font-weight:900; margin-bottom:8px;">Compare suppliers</div>
         <table class="table">
           <tr>
             <th>Supplier</th>
@@ -84,26 +95,80 @@
           <tr class="{% if r.is_best %}row-best{% endif %}">
             <td><strong>{{ r.supplier }}</strong></td>
             <td><span class="badge {% if r.label=='My account' %}ghost{% endif %}">{{ r.label }}</span></td>
-            <td>
-              <strong>£{{ "%.2f"|format(r.price) }}</strong>
-              {% if r.is_best %}<span class="best-tag">Cheapest</span>{% endif %}
-            </td>
+            <td><strong>£{{ "%.2f"|format(r.price) }}</strong>{% if r.is_best %} <span class="best-tag">Cheapest</span>{% endif %}</td>
           </tr>
           {% endfor %}
         </table>
       </div>
 
-      <div class="card card-pad">
-        <h2 style="margin:0 0 8px;">Why this matters for quoting</h2>
-        <p class="muted" style="margin:0;">
-          Builders don’t buy one line at a time — they buy a basket for a job. This page shows the true cheapest supplier for this line,
-          and your basket page shows the true cheapest supplier for the whole quote.
-        </p>
+      <div class="pdp-actions">
+        <a class="btn" href="/category/{{ p.category }}">Back to category</a>
+        <a class="btn" href="/basket">View basket totals</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs (Description / Specs / Delivery) -->
+  <div class="pdp-tabs">
+    <div class="tab-buttons">
+      <button class="tab-btn active" data-tab="desc">Description</button>
+      <button class="tab-btn" data-tab="specs">Specifications</button>
+      <button class="tab-btn" data-tab="delivery">Delivery & collection</button>
+    </div>
+
+    <div class="tab-panels">
+      <div class="tab-panel active" id="tab-desc">
+        <div class="card card-pad">
+          <h2 style="margin:0 0 8px;">Product description</h2>
+          <p class="muted" style="margin:0;">
+            {{ p.description }}
+          </p>
+        </div>
       </div>
 
+      <div class="tab-panel" id="tab-specs">
+        <div class="card card-pad">
+          <h2 style="margin:0 0 8px;">Technical specification</h2>
+          <table class="table">
+            <tr><th style="width:40%;">Spec</th><th>Value</th></tr>
+            {% for k, v in p.specs.items() %}
+              <tr><td><strong>{{ k }}</strong></td><td>{{ v }}</td></tr>
+            {% endfor %}
+          </table>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tab-delivery">
+        <div class="card card-pad">
+          <h2 style="margin:0 0 8px;">Delivery & collection</h2>
+          <p class="muted" style="margin:0;">
+            In the demo we keep delivery information secondary — most builders price first and often collect.
+            When delivery matters (insulation / bulk orders), we can show it per supplier.
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 
 </div>
+
+<script>
+  const btns = document.querySelectorAll('.tab-btn');
+  const panels = {
+    desc: document.getElementById('tab-desc'),
+    specs: document.getElementById('tab-specs'),
+    delivery: document.getElementById('tab-delivery')
+  };
+
+  btns.forEach(b => {
+    b.addEventListener('click', () => {
+      btns.forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      Object.values(panels).forEach(p => p.classList.remove('active'));
+      panels[b.dataset.tab].classList.add('active');
+    });
+  });
+</script>
+
 </body>
 </html>

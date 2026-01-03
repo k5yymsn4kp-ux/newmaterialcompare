@@ -672,3 +672,251 @@ h3{ font-size:15px; margin:0 0 10px; color:var(--muted); font-weight:700; }
   background: rgba(234,179,8,.10);
 }
 
+
+/* Category hero (Toolstation-ish) */
+.cat-hero{
+  display:grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap:14px;
+  align-items:stretch;
+}
+@media (max-width: 980px){ .cat-hero{ grid-template-columns:1fr; } }
+
+.cat-hero-left{
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:#fff;
+  box-shadow: var(--shadow);
+  padding:16px;
+}
+.cat-title{ margin:0 0 8px; font-size:28px; }
+.cat-intro{ margin:0; color:var(--muted); max-width:80ch; }
+.cat-stats{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:10px;
+}
+.stat{
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:14px;
+  padding:10px;
+  background:#fff;
+}
+.stat-k{ font-size:11px; color:var(--muted); font-weight:900; }
+.stat-v{ font-size:16px; font-weight:900; margin-top:3px; }
+
+.cat-hero-right{ display:grid; gap:12px; }
+.cat-promo-card{
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:#fff;
+  box-shadow: var(--shadow);
+  padding:14px;
+}
+.cat-promo-card.ghost{
+  background: rgba(17,24,39,.03);
+  border:1px solid rgba(17,24,39,.10);
+}
+.cpc-title{ font-weight:900; }
+.cpc-sub{ color:var(--muted); margin-top:6px; font-size:12px; }
+
+/* PDP (Toolstation-ish) */
+.pdp-top{
+  display:grid;
+  grid-template-columns: 520px 1fr;
+  gap:14px;
+  align-items:start;
+}
+@media (max-width: 980px){ .pdp-top{ grid-template-columns:1fr; } }
+
+.pdp-gallery{
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:#fff;
+  box-shadow: var(--shadow);
+  padding:12px;
+}
+.pdp-main-img{
+  height:360px;
+  border-radius:14px;
+  border:1px solid rgba(0,0,0,.08);
+  background:
+    linear-gradient(135deg, rgba(239,68,68,.10), rgba(37,99,235,.10)),
+    repeating-linear-gradient(0deg, rgba(0,0,0,.03) 0, rgba(0,0,0,.03) 1px, transparent 1px, transparent 8px);
+}
+.pdp-thumbs{ display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-top:10px; }
+.pdp-thumb{
+  height:66px;
+  border-radius:12px;
+  border:1px solid rgba(0,0,0,.08);
+  background: rgba(17,24,39,.04);
+}
+
+.pdp-buy{ }
+.pdp-meta-row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
+.pdp-title{ margin:0; font-size:26px; }
+
+.pdp-pricebox{
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:#fff;
+  box-shadow: var(--shadow);
+  padding:14px;
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+}
+@media (max-width: 700px){ .pdp-pricebox{ flex-direction:column; align-items:stretch; } }
+
+.pdp-actions{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+
+/* Tabs */
+.pdp-tabs{ margin-top:14px; }
+.tab-buttons{
+  display:flex;
+  gap:10px;
+  border-bottom:1px solid rgba(0,0,0,.08);
+}
+.tab-btn{
+  background:transparent;
+  border:none;
+  font-weight:900;
+  padding:12px 10px;
+  cursor:pointer;
+  color:#111827;
+  border-bottom:3px solid transparent;
+}
+.tab-btn.active{
+  border-bottom:3px solid #ef4444;
+  color:#b91c1c;
+}
+.tab-panels{ padding-top:12px; }
+.tab-panel{ display:none; }
+.tab-panel.active{ display:block; }
+
+
+/* Category hero (Toolstation-ish) */
+.cat-hero{
+  display:grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap:14px;
+  align-items:stretch;
+}
+@media (max-width: 980px){ .cat-hero{ grid-template-columns:1fr; } }
+
+.cat-hero-left{
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:#fff;
+  box-shadow: var(--shadow);
+  padding:16px;
+}
+.cat-title{ margin:0 0 8px; font-size:28px; }
+.cat-intro{ margin:0; color:var(--muted); max-width:80ch; }
+.cat-stats{
+  margin-top:12px;
+  display:grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap:10px;
+}
+.stat{
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:14px;
+  padding:10px;
+  background:#fff;
+}
+.stat-k{ font-size:11px; color:var(--muted); font-weight:900; }
+.stat-v{ font-size:16px; font-weight:900; margin-top:3px; }
+
+.cat-hero-right{ display:grid; gap:12px; }
+.cat-promo-card{
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:#fff;
+  box-shadow: var(--shadow);
+  padding:14px;
+}
+.cat-promo-card.ghost{
+  background: rgba(17,24,39,.03);
+  border:1px solid rgba(17,24,39,.10);
+}
+.cpc-title{ font-weight:900; }
+.cpc-sub{ color:var(--muted); margin-top:6px; font-size:12px; }
+
+/* PDP (Toolstation-ish) */
+.pdp-top{
+  display:grid;
+  grid-template-columns: 520px 1fr;
+  gap:14px;
+  align-items:start;
+}
+@media (max-width: 980px){ .pdp-top{ grid-template-columns:1fr; } }
+
+.pdp-gallery{
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:#fff;
+  box-shadow: var(--shadow);
+  padding:12px;
+}
+.pdp-main-img{
+  height:360px;
+  border-radius:14px;
+  border:1px solid rgba(0,0,0,.08);
+  background:
+    linear-gradient(135deg, rgba(239,68,68,.10), rgba(37,99,235,.10)),
+    repeating-linear-gradient(0deg, rgba(0,0,0,.03) 0, rgba(0,0,0,.03) 1px, transparent 1px, transparent 8px);
+}
+.pdp-thumbs{ display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-top:10px; }
+.pdp-thumb{
+  height:66px;
+  border-radius:12px;
+  border:1px solid rgba(0,0,0,.08);
+  background: rgba(17,24,39,.04);
+}
+
+.pdp-buy{ }
+.pdp-meta-row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
+.pdp-title{ margin:0; font-size:26px; }
+
+.pdp-pricebox{
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:#fff;
+  box-shadow: var(--shadow);
+  padding:14px;
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+}
+@media (max-width: 700px){ .pdp-pricebox{ flex-direction:column; align-items:stretch; } }
+
+.pdp-actions{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+
+/* Tabs */
+.pdp-tabs{ margin-top:14px; }
+.tab-buttons{
+  display:flex;
+  gap:10px;
+  border-bottom:1px solid rgba(0,0,0,.08);
+}
+.tab-btn{
+  background:transparent;
+  border:none;
+  font-weight:900;
+  padding:12px 10px;
+  cursor:pointer;
+  color:#111827;
+  border-bottom:3px solid transparent;
+}
+.tab-btn.active{
+  border-bottom:3px solid #ef4444;
+  color:#b91c1c;
+}
+.tab-panels{ padding-top:12px; }
+.tab-panel{ display:none; }
+.tab-panel.active{ display:block; }
+

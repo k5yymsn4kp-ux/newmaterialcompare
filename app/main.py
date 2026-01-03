@@ -24,15 +24,47 @@ SUPPLIER_PRICE_TYPE = {
     "Huws Gray": "My account",
 }
 
+CATEGORY_TITLES = {
+    "timber": "Timber & Carcassing",
+    "sheet": "Sheet Materials",
+    "insulation": "Insulation",
+    "drylining": "Drylining",
+    "fixings": "Fixings",
+    "tools": "Tools & Consumables",
+    "aggregates": "Aggregates",
+}
+
+CATEGORY_INTROS = {
+    "timber": "Browse carcassing timber, joists and CLS sizes. Add quantities and compare the true basket totals across suppliers.",
+    "sheet": "OSB, MDF, ply and flooring boards. Built for quoting — get a realistic basket total fast.",
+    "insulation": "PIR, mineral wool and acoustic products. Price first; delivery stays secondary unless you need it.",
+    "drylining": "Plasterboard, studs and track. Compare supplier totals for refurbs and extensions.",
+    "fixings": "Screws, plugs and brackets. Quick add to basket with a clean trade-retail layout.",
+    "tools": "Consumables and essential tools. Built for fast quoting and repeat buying.",
+    "aggregates": "Cement, sand, MOT type 1 and ballast. Compare supplier totals in one place.",
+}
+
+def slugify_brand(name: str) -> str:
+    first = name.split(" ")[0].strip()
+    if not first:
+        return "Generic"
+    if len(first) > 14:
+        return "Generic"
+    return first
+
+def build_sku(pid: int) -> str:
+    return str(80000 + pid)
+
+def parse_screw_size(name: str):
+    m = re.search(r"(\d+(?:\.\d+)?)x(\d+)", name.lower())
+    if not m:
+        return None, None
+    return float(m.group(1)), int(m.group(2))
+
 # -------------------------
-# DEMO CATALOGUE (hundreds)
+# DEMO CATALOGUE
 # -------------------------
 def make_prices(category: str, base: float, rng: random.Random):
-    """
-    Demo realism:
-    - Merchants cheaper on timber/sheet/insulation/drylining/aggregates
-    - Toolstation/Screwfix cheaper on fixings/tools
-    """
     if category in ("timber", "sheet", "insulation", "drylining", "aggregates"):
         ts = base * rng.uniform(1.06, 1.18)
         sf = base * rng.uniform(1.08, 1.22)
@@ -47,13 +79,62 @@ def make_prices(category: str, base: float, rng: random.Random):
         huw = base * rng.uniform(1.04, 1.18)
 
     def r2(x): return float(f"{x:.2f}")
-    return {
-        "Toolstation": r2(ts),
-        "Screwfix": r2(sf),
-        "MKM": r2(mkm),
-        "Jewson": r2(jew),
-        "Huws Gray": r2(huw),
+    return {"Toolstation": r2(ts), "Screwfix": r2(sf), "MKM": r2(mkm), "Jewson": r2(jew), "Huws Gray": r2(huw)}
+
+def derive_specs(category: str, name: str):
+    specs = {}
+    if category == "timber":
+        m = re.search(r"(\d)x(\d)", name)
+        if m: specs["Size"] = f"{m.group(1)}x{m.group(2)}"
+        lm = re.search(r"(\d\.\d)m", name)
+        if lm: specs["Length"] = lm.group(1) + "m"
+        specs["Grade"] = "C16 (demo)"
+        specs["Treatment"] = "Untreated (demo)"
+    elif category == "sheet":
+        tm = re.search(r"(\d+)(?:mm)", name)
+        if tm: specs["Thickness"] = tm.group(1) + "mm"
+        specs["Sheet size"] = "2440 x 1220mm"
+        specs["Use"] = "General construction (demo)"
+    elif category == "insulation":
+        tm = re.search(r"(\d+)(?:mm)", name)
+        if tm: specs["Thickness"] = tm.group(1) + "mm"
+        specs["Board size"] = "2440 x 1220mm (demo)"
+        specs["Thermal"] = "Good (demo)"
+    elif category == "drylining":
+        tm = re.search(r"(\d+(?:\.\d+)?)(?:mm)", name)
+        if tm: specs["Thickness"] = str(tm.group(1)) + "mm"
+        specs["Board size"] = "2400 x 1200mm (demo)"
+        specs["Edge"] = "Tapered (demo)"
+    elif category == "fixings":
+        d, l = parse_screw_size(name)
+        if d and l:
+            specs["Diameter"] = f"{d}mm"
+            specs["Length"] = f"{l}mm"
+        pm = re.search(r"\(box (\d+)\)", name.lower())
+        if pm: specs["Pack size"] = pm.group(1)
+        specs["Drive"] = "Torx (demo)"
+        specs["Finish"] = "Zinc (demo)"
+    elif category == "tools":
+        specs["Use"] = "Trade use (demo)"
+        specs["Compatibility"] = "Standard (demo)"
+    elif category == "aggregates":
+        specs["Unit"] = "Bulk / bag (demo)"
+        specs["Use"] = "Groundworks (demo)"
+    else:
+        specs["Info"] = "Demo spec"
+    return specs
+
+def derive_description(category: str, name: str):
+    base = {
+        "timber": "Carcassing timber suitable for general framing and structural work. Add quantities and compare supplier totals for your job.",
+        "sheet": "Sheet material for flooring, sheathing and general construction. Compare prices across suppliers and build your basket total fast.",
+        "insulation": "Insulation product for thermal performance on site. Delivery stays secondary, pricing stays primary.",
+        "drylining": "Drylining product used in partitions and linings. Build a quote basket in minutes.",
+        "fixings": "Reliable fixings for day-to-day site work. Add to basket quickly and compare suppliers.",
+        "tools": "Trade essentials and consumables. Built for quick repeat buying.",
+        "aggregates": "Core materials for groundworks and general build. Compare supplier totals at quote stage.",
     }
+    return base.get(category, "Demo product description.") + f" (Item: {name})"
 
 def generate_demo_products():
     rng = random.Random(42)
@@ -72,53 +153,25 @@ def generate_demo_products():
         ("drylining", "12.5mm Plasterboard 2400x1200", 9.80),
         ("aggregates", "Building Sand Bulk Bag", 52.00),
     ]
+
     for cat, name, base in anchors:
-        catalogue.append({"id": pid, "category": cat, "name": name, "prices": make_prices(cat, base, rng)})
+        p = {
+            "id": pid,
+            "category": cat,
+            "name": name,
+            "prices": make_prices(cat, base, rng),
+        }
+        catalogue.append(p)
         pid += 1
 
     specs = {
-        "timber": [
-            ("C16 CLS 3x2", [2.4, 3.0, 3.6, 4.8], 3.70),
-            ("C16 CLS 4x2", [2.4, 3.0, 3.6, 4.8], 4.90),
-            ("C24 Joist 7x2", [3.0, 3.6, 4.2, 4.8], 10.50),
-            ("C24 Joist 8x2", [3.0, 3.6, 4.2, 4.8], 12.20),
-        ],
-        "sheet": [
-            ("OSB3", [9, 11, 18], 16.50),
-            ("MDF", [9, 12, 18], 22.00),
-            ("Plywood Structural", [12, 18], 28.50),
-            ("Chipboard Flooring T&G", [18, 22], 24.00),
-        ],
-        "insulation": [
-            ("PIR Board", [25, 50, 75, 100], 18.00),
-            ("Mineral Wool Roll", [100, 170, 200], 9.50),
-            ("Acoustic Slab", [50, 75], 15.00),
-        ],
-        "drylining": [
-            ("Plasterboard Tapered Edge", [9.5, 12.5, 15], 7.80),
-            ("Moisture Resistant Board", [12.5], 10.20),
-            ("Fireline Board", [12.5, 15], 11.50),
-            ("Metal Stud Track 3m", [50, 70], 6.00),
-        ],
-        "fixings": [
-            ("ForgeFast Wood Screws", ["4x40", "4x50", "5x80", "5x100"], 7.50),
-            ("Spectre Multi-Purpose Screws", ["4x40", "4x60", "4x70", "5x80"], 8.20),
-            ("TurboGold Screws", ["4x40", "4x50", "5x80", "5x100"], 7.90),
-            ("Masonry Screws", ["7.5x100", "7.5x120", "7.5x150"], 12.00),
-            ("Wall Plugs (pack 100)", ["red", "brown", "blue"], 4.50),
-            ("Angle Brackets", ["50mm", "75mm", "100mm"], 6.20),
-        ],
-        "tools": [
-            ("Diamond Blade 115mm", ["general", "tile"], 14.00),
-            ("Multi-tool Blades (set)", ["wood", "metal", "mixed"], 12.50),
-            ("Expanding Foam 750ml", ["gun grade", "hand held"], 7.20),
-        ],
-        "aggregates": [
-            ("Sharp Sand Bulk Bag", [1], 50.00),
-            ("Ballast Bulk Bag", [1], 52.00),
-            ("Type 1 MOT Bulk Bag", [1], 54.00),
-            ("Cement 25kg", [1], 6.80),
-        ],
+        "timber": [("C16 CLS 3x2", [2.4, 3.0, 3.6, 4.8], 3.70), ("C16 CLS 4x2", [2.4, 3.0, 3.6, 4.8], 4.90), ("C24 Joist 7x2", [3.0, 3.6, 4.2, 4.8], 10.50)],
+        "sheet": [("OSB3", [9, 11, 18], 16.50), ("MDF", [9, 12, 18], 22.00), ("Plywood Structural", [12, 18], 28.50)],
+        "insulation": [("PIR Board", [25, 50, 75, 100], 18.00), ("Mineral Wool Roll", [100, 170, 200], 9.50)],
+        "drylining": [("Plasterboard Tapered Edge", [9.5, 12.5, 15], 7.80), ("Fireline Board", [12.5, 15], 11.50)],
+        "fixings": [("ForgeFast Wood Screws", ["4x40", "4x50", "5x80", "5x100"], 7.50), ("Spectre Multi-Purpose Screws", ["4x40", "4x60", "4x70", "5x80"], 8.20), ("TurboGold Screws", ["4x40", "4x50", "5x80", "5x100"], 7.90)],
+        "tools": [("Expanding Foam 750ml", ["gun grade", "hand held"], 7.20), ("Diamond Blade 115mm", ["general", "tile"], 14.00)],
+        "aggregates": [("Cement 25kg", [1], 6.80), ("Type 1 MOT Bulk Bag", [1], 54.00)],
     }
 
     for cat, rows in specs.items():
@@ -150,6 +203,13 @@ def generate_demo_products():
 
 PRODUCTS = generate_demo_products()
 
+# enrich products with retail-ish fields
+for p in PRODUCTS:
+    p["brand"] = slugify_brand(p["name"])
+    p["sku"] = build_sku(p["id"])
+    p["specs"] = derive_specs(p["category"], p["name"])
+    p["description"] = derive_description(p["category"], p["name"])
+
 # -------------------------
 # In-memory state (demo)
 # -------------------------
@@ -169,36 +229,17 @@ def find_product(pid: int):
 def supplier_prices_sorted(product):
     rows = []
     for s in SUPPLIERS:
-        rows.append({
-            "supplier": s,
-            "label": SUPPLIER_PRICE_TYPE.get(s, "Online"),
-            "price": float(product["prices"][s]),
-        })
+        rows.append({"supplier": s, "label": SUPPLIER_PRICE_TYPE.get(s, "Online"), "price": float(product["prices"][s])})
     rows.sort(key=lambda r: r["price"])
+    for i, r in enumerate(rows):
+        r["is_best"] = (i == 0)
+        r["is_second"] = (i == 1)
     return rows
 
-def best_and_second(product):
+def best_and_rows(product):
     rows = supplier_prices_sorted(product)
     best = rows[0]
-    second = rows[1] if len(rows) > 1 else None
-    saving = 0.0
-    if second:
-        saving = max(0.0, float(second["price"]) - float(best["price"]))
-    return best, second, saving, rows
-
-def category_list():
-    cats = {}
-    for p in PRODUCTS:
-        cats[p["category"]] = cats.get(p["category"], 0) + 1
-    order = ["timber", "sheet", "insulation", "drylining", "fixings", "tools", "aggregates"]
-    out = []
-    for c in order:
-        if c in cats:
-            out.append((c, cats[c]))
-    for c, n in sorted(cats.items()):
-        if c not in order:
-            out.append((c, n))
-    return out
+    return best, rows
 
 def search_pool(q: str, cat: str = ""):
     q = (q or "").strip().lower()
@@ -210,22 +251,14 @@ def search_pool(q: str, cat: str = ""):
         results = [p for p in results if q in p["name"].lower()]
     return results
 
-def parse_screw_size(name: str):
-    m = re.search(r"(\d+(?:\.\d+)?)x(\d+)", name.lower())
-    if not m:
-        return None, None
-    return float(m.group(1)), int(m.group(2))
-
 def derive_facets(items):
     brands = Counter()
     diams = Counter()
     lengths = Counter()
-    cats = Counter()
 
     for p in items:
-        cats[p["category"]] += 1
-        first = p["name"].split(" ")[0].strip()
-        if first and first[0].isalpha() and len(first) <= 12:
+        first = p["brand"]
+        if first:
             brands[first] += 1
 
         d, l = parse_screw_size(p["name"])
@@ -233,21 +266,16 @@ def derive_facets(items):
             diams[str(d).rstrip("0").rstrip(".")] += 1
             lengths[str(l)] += 1
 
-    return {
-        "brands": brands.most_common(10),
-        "diameters": diams.most_common(10),
-        "lengths": lengths.most_common(10),
-        "categories": cats.most_common(),
-    }
+    return {"brands": brands.most_common(10), "diameters": diams.most_common(10), "lengths": lengths.most_common(10)}
 
 def apply_filters(items, brand: str = "", diameter: str = "", length: str = ""):
     brand = (brand or "").strip()
     diameter = (diameter or "").strip()
     length = (length or "").strip()
-    out = items
 
+    out = items
     if brand:
-        out = [p for p in out if p["name"].split(" ")[0].strip() == brand]
+        out = [p for p in out if p.get("brand") == brand]
 
     if diameter or length:
         filtered = []
@@ -264,9 +292,9 @@ def apply_filters(items, brand: str = "", diameter: str = "", length: str = ""):
 
 def sort_items(items, sort: str):
     if sort == "price_asc":
-        return sorted(items, key=lambda p: best_and_second(p)[0]["price"])
+        return sorted(items, key=lambda p: best_and_rows(p)[0]["price"])
     if sort == "price_desc":
-        return sorted(items, key=lambda p: best_and_second(p)[0]["price"], reverse=True)
+        return sorted(items, key=lambda p: best_and_rows(p)[0]["price"], reverse=True)
     if sort == "alpha":
         return sorted(items, key=lambda p: p["name"].lower())
     return items
@@ -286,7 +314,6 @@ def pick_split_supplier(product):
 
     cat = product.get("category", "")
     merchants = ["MKM", "Jewson", "Huws Gray"]
-
     if cat in ("timber", "sheet", "insulation", "drylining", "aggregates"):
         best_merchant = min(merchants, key=lambda s: prices[s])
         if prices[best_merchant] <= abs_price * 1.03:
@@ -305,7 +332,6 @@ def calculate_totals(vat_mode: str):
         qty = row["qty"]
         for s in SUPPLIERS:
             totals_ex_single[s] += float(p["prices"][s]) * qty
-
         chosen = pick_split_supplier(p)
         split_total_ex += float(p["prices"][chosen]) * qty
 
@@ -342,12 +368,9 @@ def calculate_totals(vat_mode: str):
 # -------------------------
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    cats = category_list()
     basket_count = sum(int(v) for v in BASKET.values()) if BASKET else 0
-    return templates.TemplateResponse(
-        "home.html",
-        {"request": request, "categories": cats, "basket_count": basket_count},
-    )
+    categories = [(c, sum(1 for p in PRODUCTS if p["category"] == c)) for c in CATEGORY_TITLES.keys()]
+    return templates.TemplateResponse("home.html", {"request": request, "categories": categories, "basket_count": basket_count})
 
 @app.get("/search", response_class=HTMLResponse)
 def search_page(
@@ -366,40 +389,64 @@ def search_page(
 
     cards = []
     for p in filtered[:48]:
-        best, second, saving, rows = best_and_second(p)
-        # mark top 2 for mini table styling
-        for i, r in enumerate(rows):
-            r["is_best"] = (i == 0)
-            r["is_second"] = (i == 1)
+        best, rows = best_and_rows(p)
         cards.append({
             **p,
             "best_supplier": best["supplier"],
             "best_price": float(best["price"]),
             "best_label": best["label"],
-            "second_supplier": second["supplier"] if second else "",
-            "second_price": float(second["price"]) if second else 0.0,
-            "save_vs_second": float(f"{saving:.2f}"),
-            "mini_rows": rows[:5],  # show top 5 suppliers (we have 5 total anyway)
+            "mini_rows": rows[:5],
         })
 
     basket_count = sum(int(v) for v in BASKET.values()) if BASKET else 0
+    return templates.TemplateResponse("search.html", {
+        "request": request, "q": q, "cat": cat, "brand": brand, "diameter": diameter, "length": length, "sort": sort,
+        "basket_count": basket_count, "facets": facets, "results_total": len(filtered), "cards": cards
+    })
 
-    return templates.TemplateResponse(
-        "search.html",
-        {
-            "request": request,
-            "q": q,
-            "cat": cat,
-            "brand": brand,
-            "diameter": diameter,
-            "length": length,
-            "sort": sort,
-            "basket_count": basket_count,
-            "facets": facets,
-            "results_total": len(filtered),
-            "cards": cards,
-        }
-    )
+@app.get("/category/{cat}", response_class=HTMLResponse)
+def category_page(
+    request: Request,
+    cat: str,
+    q: str = "",
+    brand: str = "",
+    diameter: str = "",
+    length: str = "",
+    sort: str = "relevance",
+):
+    cat = (cat or "").strip().lower()
+    pool = search_pool(q, cat)
+    facets = derive_facets(pool)
+    filtered = apply_filters(pool, brand=brand, diameter=diameter, length=length)
+    filtered = sort_items(filtered, sort)
+
+    cards = []
+    for p in filtered[:48]:
+        best, rows = best_and_rows(p)
+        cards.append({
+            **p,
+            "best_supplier": best["supplier"],
+            "best_price": float(best["price"]),
+            "best_label": best["label"],
+            "mini_rows": rows[:5],
+        })
+
+    basket_count = sum(int(v) for v in BASKET.values()) if BASKET else 0
+    return templates.TemplateResponse("category.html", {
+        "request": request,
+        "cat": cat,
+        "cat_title": CATEGORY_TITLES.get(cat, cat.title()),
+        "cat_intro": CATEGORY_INTROS.get(cat, "Browse products and compare suppliers."),
+        "q": q,
+        "brand": brand,
+        "diameter": diameter,
+        "length": length,
+        "sort": sort,
+        "basket_count": basket_count,
+        "facets": facets,
+        "results_total": len(filtered),
+        "cards": cards,
+    })
 
 @app.get("/product/{pid}", response_class=HTMLResponse)
 def product_page(request: Request, pid: int):
@@ -407,27 +454,18 @@ def product_page(request: Request, pid: int):
     if not p:
         return RedirectResponse(url="/search", status_code=303)
 
-    best, second, saving, rows = best_and_second(p)
-    for i, r in enumerate(rows):
-        r["is_best"] = (i == 0)
-        r["is_second"] = (i == 1)
+    rows = supplier_prices_sorted(p)
+    best = rows[0]
 
     basket_count = sum(int(v) for v in BASKET.values()) if BASKET else 0
-
-    return templates.TemplateResponse(
-        "product.html",
-        {
-            "request": request,
-            "p": p,
-            "basket_count": basket_count,
-            "best_supplier": best["supplier"],
-            "best_price": float(best["price"]),
-            "save_vs_second": float(f"{saving:.2f}"),
-            "second_supplier": second["supplier"] if second else "",
-            "second_price": float(second["price"]) if second else 0.0,
-            "price_rows": rows,
-        }
-    )
+    return templates.TemplateResponse("product.html", {
+        "request": request,
+        "p": p,
+        "basket_count": basket_count,
+        "best_supplier": best["supplier"],
+        "best_price": float(best["price"]),
+        "price_rows": rows,
+    })
 
 @app.post("/basket/add")
 async def basket_add(request: Request):
@@ -471,18 +509,15 @@ def basket_page(request: Request):
     purchase_mode = SETTINGS["purchase_mode"]
     data = calculate_totals(vat_mode)
 
-    return templates.TemplateResponse(
-        "basket.html",
-        {
-            "request": request,
-            "vat_mode": vat_mode,
-            "purchase_mode": purchase_mode,
-            "suppliers": SUPPLIERS,
-            "supplier_price_type": SUPPLIER_PRICE_TYPE,
-            "jobs": sorted(JOBS.items(), key=lambda x: x[1]["created"], reverse=True),
-            **data,
-        }
-    )
+    return templates.TemplateResponse("basket.html", {
+        "request": request,
+        "vat_mode": vat_mode,
+        "purchase_mode": purchase_mode,
+        "suppliers": SUPPLIERS,
+        "supplier_price_type": SUPPLIER_PRICE_TYPE,
+        "jobs": sorted(JOBS.items(), key=lambda x: x[1]["created"], reverse=True),
+        **data,
+    })
 
 @app.post("/jobs/save")
 async def jobs_save(request: Request):
