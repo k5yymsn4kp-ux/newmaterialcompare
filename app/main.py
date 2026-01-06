@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 import random
+from app.suppliers.demo import search_offers
 
 # --------------------------------------------------
 # APP SETUP (MUST BE FIRST)
@@ -124,6 +125,11 @@ def category_page(
     filtered = [p for p in PRODUCTS if p["category"] == cat]
     cards, total_pages = paginate_results(filtered, page)
     facets = build_facets(filtered)
+facets = {
+    "brands": [],
+    "diameters": [],
+    "lengths": [],
+}
 
     return templates.TemplateResponse(
         "category.html",
@@ -138,6 +144,53 @@ def category_page(
             "facets": facets,
             "results_total": len(filtered),
         }
+    )
+@app.get("/search", response_class=HTMLResponse)
+def search(
+    request: Request,
+    q: str = "",
+    cat: str = "",
+    brand: str = "",
+    diameter: str = "",
+    length: str = "",
+    sort: str = "best",
+):
+    offers = search_offers(q) if q else []
+
+    if cat:
+        offers = [o for o in offers if getattr(o, "category", "") == cat]
+
+    if brand:
+        offers = [o for o in offers if str(getattr(o, "brand", 
+"")).lower() == brand.lower()]
+
+    if diameter:
+        offers = [o for o in offers if str(getattr(o, "diameter", "")) == 
+str(diameter)]
+
+    if length:
+        offers = [o for o in offers if str(getattr(o, "length", "")) == 
+str(length)]
+
+    if sort == "price_asc":
+        offers = sorted(offers, key=lambda o: float(getattr(o, "price", 
+10**9)))
+    elif sort == "price_desc":
+        offers = sorted(offers, key=lambda o: float(getattr(o, "price", 
+0)), reverse=True)
+
+    return templates.TemplateResponse(
+        "search.html",
+        {
+            "request": request,
+            "q": q,
+            "cat": cat,
+            "brand": brand,
+            "diameter": diameter,
+            "length": length,
+            "sort": sort,
+            "offers": offers,
+        },
     )
 
 
